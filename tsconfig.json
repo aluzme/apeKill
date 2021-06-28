@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+      "outDir": "build",
+      "noImplicitAny": true,
+      "lib": [
+        "ES6",
+        "esnext",
+        "dom"
+      ],
+      "module": "commonjs",
+      "target": "es6",
+      "allowJs": false,
+      "moduleResolution": "node",
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
+      "resolveJsonModule": true,
+      "esModuleInterop": true,
+    },
+  }
