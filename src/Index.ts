@@ -6,5 +6,4 @@ new LoadConfig();
 
 (async () => {
     const ApeKiller = new Ape();
-    ApeKiller.run();
 })();
