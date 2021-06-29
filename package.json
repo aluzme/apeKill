@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "pkgmac": "proxychains4 pkg . -t node8-macos-x64 -o app"
   },
   "keywords": [],
   "author": "",
@@ -16,5 +17,14 @@
     "abi-decoder": "^2.4.0",
     "dotenv": "^10.0.0",
     "web3": "^1.3.6"
+  },
+  "bin":"build/Index.js",
+  "pkg":{
+    "scripts": [
+      "build/**/*.js"
+    ],
+    "assets":[
+      "ABIs/**/*"
+    ]
   }
 }
