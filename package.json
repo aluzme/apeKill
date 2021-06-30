@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "pkgmac": "proxychains4 pkg . -t node8-macos-x64 -o app"
+    "pkgmac": "proxychains4 pkg . -t node8-macos-x64 -o app",
+    "run": "proxychains4 ts-node src/Index.ts"
   },
   "keywords": [],
   "author": "",
