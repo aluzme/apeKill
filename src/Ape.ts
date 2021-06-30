@@ -4,8 +4,6 @@ import { fromWei, toWei } from 'web3-utils'
 import Utils from './Utils'
 import { Topics, Symbols, Reserve } from './Models'
 import BN, { BigNumber } from 'bignumber.js'
-import ora from 'ora'
-
 export default class Ape {
 
     // web3 provider
@@ -36,7 +34,6 @@ export default class Ape {
 
     // Start monitoring pair created events
     public watch() {
-        const spinner = ora().start()
         this.web3.eth.subscribe('logs', {
             address: this.factoryAddress,
             topics: [Topics.PairCreated],
@@ -49,8 +46,7 @@ export default class Ape {
             })
             .on('error', async (error) => {
                 console.error(`Unexpected error ${error.message}`);
-                spinner.stop();
-                await this.sleep(2000)
+                console.error("WSS Connection Error. Program will reboot.");
                 process.exit(1)
             })
     }
