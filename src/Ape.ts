@@ -18,12 +18,11 @@ export default class Ape {
     private token0: string;
     private token1: string;
     private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
-    private tartgetAddress: string;
+    private tartgetAddress: string = process.env.TARGET_TOKEN_TOBUY;
 
-    public constructor(target: string) {
+    public constructor() {
         this.web3 = new Web3(process.env.WEB3_WS_PROVIDER);
         this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
-        this.tartgetAddress = target;
 
         // load ABIs into decoder
         this.abiDecoder.addABI(require('../ABIs/IPancakeFactoryV2.json'))
