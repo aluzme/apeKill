@@ -105,7 +105,7 @@ export default class Ape {
         try {
 
             console.log(this.getOtherSideToken(), this.defaultBuyIn);
-            this.swapExactETHForTokensSupportingFeeOnTransferTokens(this.getOtherSideToken(), this.defaultBuyIn)
+            this.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
                 .then((reveived) => {
                     console.log(reveived)
                 })
@@ -123,40 +123,6 @@ export default class Ape {
             const router = this.router();
 
             const methodCall = router.methods.swapExactETHForTokens(
-                // amountOutMin
-                '0',
-                // path
-                [Symbols.wbnb, token],
-                // to address
-                this.account.address,
-                // deadline
-                Math.round(new Date().getTime() / 1000) + 30,
-            );
-
-            this.sendSignedTX(this.account, this.routerAddress, '500000', this.defaultGas, methodCall, amount)
-                .then((receipt) => {
-                    const decodedLogs = this.abiDecoder.decodedLogs(receipt.logs);
-                    const swapped = this.getSwappedAmount(decodedLogs);
-
-                    if (swapped) {
-                        resolve(swapped);
-                        return;
-                    }
-
-                    console.error(`Failed to decode swapped amount for txn ${receipt.transactionHash}`);
-                })
-                .catch(error => {
-                    reject(error);
-                })
-
-        })
-    }
-
-    private swapExactETHForTokensSupportingFeeOnTransferTokens(token: string, amount: string) {
-        return new Promise<BN>((resolve, reject) => {
-            const router = this.router();
-
-            const methodCall = router.methods.swapExactETHForTokensSupportingFeeOnTransferTokens(
                 // amountOutMin
                 '0',
                 // path
