@@ -5,7 +5,7 @@ import Utils from './Utils'
 import { Topics, Symbols, Reserve } from './Models'
 import { Console } from 'console';
 import BN, { BigNumber } from 'bignumber.js'
-import { decode } from 'punycode';
+import Inquirer from 'inquirer'
 
 export default class Ape {
 
@@ -19,7 +19,7 @@ export default class Ape {
     private pair: string;
     private token0: string;
     private token1: string;
-    private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT)
+    private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
 
     public constructor() {
         this.web3 = new Web3(process.env.WEB3_WS_PROVIDER);
@@ -72,7 +72,7 @@ export default class Ape {
         // if LP == 0
         if (bnbReserve.eq(0)) { return; }
 
-        this.Buy()
+        //this.Buy()
 
         return;
 
