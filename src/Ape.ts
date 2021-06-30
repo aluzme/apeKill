@@ -3,9 +3,7 @@ import { Account, TransactionReceipt, TransactionConfig } from "web3-core";
 import { fromWei, toWei } from 'web3-utils'
 import Utils from './Utils'
 import { Topics, Symbols, Reserve } from './Models'
-import { Console } from 'console';
 import BN, { BigNumber } from 'bignumber.js'
-import Inquirer from 'inquirer'
 
 export default class Ape {
 
@@ -20,10 +18,12 @@ export default class Ape {
     private token0: string;
     private token1: string;
     private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
+    private tartgetAddress: string;
 
-    public constructor() {
+    public constructor(target: string) {
         this.web3 = new Web3(process.env.WEB3_WS_PROVIDER);
         this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
+        this.tartgetAddress = target;
 
         // load ABIs into decoder
         this.abiDecoder.addABI(require('../ABIs/IPancakeFactoryV2.json'))
@@ -33,7 +33,8 @@ export default class Ape {
     }
 
     // Start monitoring pair created events
-    public async watch() {
+    public watch() {
+
         this.web3.eth.subscribe('logs', {
             address: this.factoryAddress,
             topics: [Topics.PairCreated],
@@ -44,10 +45,17 @@ export default class Ape {
             .on('connected', () => {
                 console.log("Listening to logs...")
             })
-            .on('error', (error) => {
+            .on('error', async (error) => {
                 console.error(`Unexpected error ${error.message}`);
+                await this.sleep(2000)
                 this.watch();
             })
+    }
+
+    private sleep(ms: number) {
+        return new Promise((resolve) => {
+            setTimeout(resolve, ms);
+        });
     }
 
     private async handleLogs(log: any) {
@@ -67,12 +75,13 @@ export default class Ape {
 
         const bnbReserve = values.token0 === Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
-        console.log(`New pair created: ${values.pair} BNB reserve: ${fromWei(bnbReserve.toFixed())}`);
-
         // if LP == 0
         if (bnbReserve.eq(0)) { return; }
+        console.log(`New pair created: ${values.pair} BNB reserve: ${fromWei(bnbReserve.toFixed())}`);
 
-        //this.Buy()
+        if (this.getOtherSideToken() == this.tartgetAddress) {
+            this.Buy()
+        }
 
         return;
 
