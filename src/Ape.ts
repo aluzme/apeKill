@@ -1,9 +1,10 @@
 import Web3 from 'web3'
 import { Account, TransactionReceipt, TransactionConfig } from "web3-core";
 import { fromWei, toWei } from 'web3-utils'
-import Utils from './Utils'
 import { Topics, Symbols, Reserve } from './Models'
 import BN, { BigNumber } from 'bignumber.js'
+import Utils from './Utils'
+import Logger from './Logger'
 export default class Ape {
 
     // web3 provider
@@ -18,13 +19,14 @@ export default class Ape {
     private token1: string;
     private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
     private tartgetAddress: string = process.env.TARGET_TOKEN_TOBUY;
+    private logger: Logger = new Logger('Ape');
 
     public constructor() {
         if (process.env.NODE_ENV == 'development') {
             this.web3 = new Web3(process.env.WEB3_WS_BSC_TEST_PROVIDER);
-            console.log(`ENV => ${process.env.NODE_ENV}`)
-            console.log(`routerAddress => ${this.routerAddress}`)
-            console.log(`factoryAddress => ${this.factoryAddress}`)
+            this.logger.log(`ENV => ${process.env.NODE_ENV}`)
+            this.logger.log(`routerAddress => ${this.routerAddress}`)
+            this.logger.log(`factoryAddress => ${this.factoryAddress}`)
         } else {
             this.web3 = new Web3(process.env.WEB3_WS_Default_PROVIDER);
         }
@@ -34,7 +36,7 @@ export default class Ape {
         this.abiDecoder.addABI(require('../ABIs/IPancakeFactoryV2.json'))
         this.abiDecoder.addABI(require('../ABIs/IPancakeRouterV2.json'))
 
-        console.log(`Target Token: ${this.tartgetAddress}`)
+        this.logger.log(`Target Token: ${this.tartgetAddress}`)
 
         this.watch();
     }
@@ -49,11 +51,11 @@ export default class Ape {
                 this.handleLogs(log);
             })
             .on('connected', () => {
-                console.log("Listening to logs...")
+                this.logger.log("Listening to logs...")
             })
             .on('error', async (error) => {
-                console.error(`Unexpected error ${error.message}`);
-                console.error("WSS Connection Error. Program will reboot.");
+                this.logger.error(`Unexpected error ${error.message}`);
+                this.logger.error("WSS Connection Error. Program will reboot.");
                 process.exit(1)
             })
     }
@@ -81,7 +83,7 @@ export default class Ape {
 
         const bnbReserve = values.token0 === Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
-        console.log(`New pair created: ${values.pair} BNB reserve: ${fromWei(bnbReserve.toFixed())}`);
+        this.logger.log(`New pair created: ${values.pair} BNB reserve: ${fromWei(bnbReserve.toFixed())}`);
 
         // if LP == 0
         if (bnbReserve.eq(0)) { return; }
@@ -120,17 +122,17 @@ export default class Ape {
     private Buy() {
         try {
 
-            console.log(this.getOtherSideToken(), this.defaultBuyIn);
+            this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${this.defaultBuyIn} BNB`);
             this.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
                 .then((reveived) => {
-                    console.log(reveived)
+                    this.logger.log(reveived.toString())
                 })
-                .then((error) => {
-                    console.log(error)
+                .catch((error) => {
+                    this.logger.error(error)
                 })
 
         } catch (error) {
-            console.error(error)
+            this.logger.error(error)
         }
     }
 
@@ -159,7 +161,7 @@ export default class Ape {
                         return;
                     }
 
-                    console.error(`Failed to decode swapped amount for txn ${receipt.transactionHash}`);
+                    this.logger.error(`Failed to decode swapped amount for txn ${receipt.transactionHash}`);
                 })
                 .catch(error => {
                     reject(error);
@@ -187,14 +189,14 @@ export default class Ape {
             this.web3.eth.sendSignedTransaction(signedTX.rawTransaction)
                 .on('transactionHash', (hash) => {
                     TXSubmitted = true;
-                    console.log(`Txn Hash ${hash} (${fromWei(gasPrice, 'gwei')}gwei)`);
+                    this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, 'gwei')}gwei)`);
                 })
                 .on('receipt', (receipt) => {
-                    //console.log(receipt)
+                    //this.logger.log(receipt)
                 })
                 .on('error', async (error) => {
                     if (!TXSubmitted && error.message.indexOf('') !== -1) {
-                        console.log("insufficient funds for gas")
+                        this.logger.log("insufficient funds for gas")
                     }
                 });
 
