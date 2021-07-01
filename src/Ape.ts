@@ -46,7 +46,6 @@ export default class Ape {
             topics: [Topics.PairCreated],
         })
             .on('data', (log) => {
-                console.log(log)
                 this.handleLogs(log);
             })
             .on('connected', () => {
@@ -74,7 +73,7 @@ export default class Ape {
         this.pair = values.pair;
 
         // currently support WBNB pairs only
-        if (values.token0 !== Symbols.wbnb && values.token1 !== Symbols.wbnb) {
+        if (process.env.NODE_ENV != 'development' && values.token0 !== Symbols.wbnb && values.token1 !== Symbols.wbnb) {
             return;
         }
 
