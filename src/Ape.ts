@@ -20,6 +20,7 @@ export default class Ape {
     private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
     private tartgetAddress: string = process.env.TARGET_TOKEN_TOBUY;
     private logger: Logger = new Logger('Ape');
+    private getBlockAPIKEY = "212a00f7-19e6-4c91-987f-1b1ea412c586";
 
     public constructor() {
         if (process.env.NODE_ENV == 'development') {

@@ -3,10 +3,10 @@ import * as dotenv from "dotenv";
 
 export default class LoadConfig {
     constructor() {
-        const path = fs.existsSync('.env') ? '.env' : '../.env';
+        const path = fs.existsSync('config.env') ? 'config.env' : '../config.env';
 
         if (!fs.existsSync(path)) {
-            console.error('.env file does not exist');
+            console.error('config.env file does not exist');
             process.exit(1);
         }
 
