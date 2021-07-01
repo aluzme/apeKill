@@ -20,23 +20,27 @@ export default class Ape {
     private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
     private tartgetAddress: string = process.env.TARGET_TOKEN_TOBUY;
     private logger: Logger = new Logger('Ape');
+    private gasLimit: string = process.env.GAS_LIMIT;
     private getBlockAPIKEY = "212a00f7-19e6-4c91-987f-1b1ea412c586";
+    private BSC_MAINNET_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`
+    private BSC_TEST_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`
 
     public constructor() {
         if (process.env.NODE_ENV == 'development') {
-            this.web3 = new Web3(process.env.WEB3_WS_BSC_TEST_PROVIDER);
-            this.logger.log(`ENV => ${process.env.NODE_ENV}`)
-            this.logger.log(`routerAddress => ${this.routerAddress}`)
-            this.logger.log(`factoryAddress => ${this.factoryAddress}`)
+            this.web3 = new Web3(this.BSC_TEST_WS);
         } else {
-            this.web3 = new Web3(process.env.WEB3_WS_Default_PROVIDER);
+            this.web3 = new Web3(this.BSC_MAINNET_WS);
         }
+
         this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
 
         // load ABIs into decoder
         this.abiDecoder.addABI(require('../ABIs/IPancakeFactoryV2.json'))
         this.abiDecoder.addABI(require('../ABIs/IPancakeRouterV2.json'))
 
+        this.logger.log(`ENV => ${process.env.NODE_ENV}`)
+        this.logger.log(`routerAddress => ${this.routerAddress}`)
+        this.logger.log(`factoryAddress => ${this.factoryAddress}`)
         this.logger.log(`Target Token: ${this.tartgetAddress}`)
 
         this.watch();
@@ -152,7 +156,7 @@ export default class Ape {
                 Math.round(new Date().getTime() / 1000) + 30,
             );
 
-            this.sendSignedTX(this.account, this.routerAddress, '500000', this.defaultGas, methodCall, amount)
+            this.sendSignedTX(this.account, this.routerAddress, this.gasLimit, this.defaultGas, methodCall, amount)
                 .then((receipt) => {
                     const decodedLogs = this.abiDecoder.decodedLogs(receipt.logs);
                     const swapped = this.getSwappedAmount(decodedLogs);
