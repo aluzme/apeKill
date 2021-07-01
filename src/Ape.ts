@@ -9,8 +9,8 @@ export default class Ape {
     // web3 provider
     private web3: Web3;
     private account: Account;
-    private routerAddress: string = process.env.ROUTER_ADDRESS;
-    private factoryAddress: string = process.env.FACTORY_ADDRESS;
+    private routerAddress: string = process.env.NODE_ENV == 'development' ? process.env.ROUTER_TEST_ADDRESS : process.env.ROUTER_MAIN_ADDRESS;
+    private factoryAddress: string = process.env.NODE_ENV == 'development' ? process.env.FACTORY_TEST_ADDRESS : process.env.FACTORY_MAIN_ADDRESS;
     private defaultGas = toWei(process.env.GAS_PRICE, 'gwei');
     private abiDecoder = require('abi-decoder');
     private pair: string;
@@ -20,7 +20,14 @@ export default class Ape {
     private tartgetAddress: string = process.env.TARGET_TOKEN_TOBUY;
 
     public constructor() {
-        this.web3 = new Web3(process.env.WEB3_WS_PROVIDER);
+        if (process.env.NODE_ENV == 'development') {
+            this.web3 = new Web3(process.env.WEB3_WS_BSC_TEST_PROVIDER);
+            console.log(`ENV => ${process.env.NODE_ENV}`)
+            console.log(`routerAddress => ${this.routerAddress}`)
+            console.log(`factoryAddress => ${this.factoryAddress}`)
+        } else {
+            this.web3 = new Web3(process.env.WEB3_WS_Default_PROVIDER);
+        }
         this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
 
         // load ABIs into decoder
@@ -39,6 +46,7 @@ export default class Ape {
             topics: [Topics.PairCreated],
         })
             .on('data', (log) => {
+                console.log(log)
                 this.handleLogs(log);
             })
             .on('connected', () => {
@@ -74,9 +82,10 @@ export default class Ape {
 
         const bnbReserve = values.token0 === Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
+        console.log(`New pair created: ${values.pair} BNB reserve: ${fromWei(bnbReserve.toFixed())}`);
+
         // if LP == 0
         if (bnbReserve.eq(0)) { return; }
-        console.log(`New pair created: ${values.pair} BNB reserve: ${fromWei(bnbReserve.toFixed())}`);
 
         if (this.getOtherSideToken() == this.tartgetAddress) {
             this.Buy()
