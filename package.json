@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "pkgmac": "pc pkg . -t node8-macos-x64 -o app",
+    "pkgmac": "proxychains4 pkg . -o ApeKill",
     "webpack": "webpack --watch --progress",
-    "run": "pc ts-node src/Index.ts"
+    "run": "proxychains4 ts-node src/Index.ts"
   },
   "keywords": [],
   "author": "",
@@ -28,13 +28,10 @@
     "ora": "^5.4.1",
     "web3": "^1.3.6"
   },
-  "bin": "build/Index.js",
+  "bin": "build/app.js",
   "pkg": {
     "scripts": [
-      "build/**/*.js"
-    ],
-    "assets": [
-      "ABIs/**/*"
+      "build/app.js"
     ]
   }
 }

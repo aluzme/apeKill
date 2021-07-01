@@ -1,7 +1,8 @@
 const path = require('path');
 
 module.exports = {
-    mode: "development",
+    //mode: "development",
+    mode: "production",
     target: 'node',
     entry: {
         app: './src/Index.ts',
