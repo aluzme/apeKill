@@ -10,17 +10,20 @@ export default class Ape {
     // web3 provider
     private web3: Web3;
     private account: Account;
-    private routerAddress: string = process.env.NODE_ENV == 'development' ? process.env.ROUTER_TEST_ADDRESS : process.env.ROUTER_MAIN_ADDRESS;
-    private factoryAddress: string = process.env.NODE_ENV == 'development' ? process.env.FACTORY_TEST_ADDRESS : process.env.FACTORY_MAIN_ADDRESS;
-    private defaultGas = toWei(process.env.GAS_PRICE, 'gwei');
     private abiDecoder = require('abi-decoder');
+    private logger: Logger = new Logger('Ape');
+
     private pair: string;
     private token0: string;
     private token1: string;
+
+    private routerAddress: string = process.env.NODE_ENV == 'development' ? process.env.ROUTER_TEST_ADDRESS : process.env.ROUTER_MAIN_ADDRESS;
+    private factoryAddress: string = process.env.NODE_ENV == 'development' ? process.env.FACTORY_TEST_ADDRESS : process.env.FACTORY_MAIN_ADDRESS;
     private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
     private tartgetAddress: string = process.env.TARGET_TOKEN_TOBUY;
-    private logger: Logger = new Logger('Ape');
+    private defaultGas = toWei(process.env.GAS_PRICE, 'gwei');
     private gasLimit: string = process.env.GAS_LIMIT;
+
     private getBlockAPIKEY = "212a00f7-19e6-4c91-987f-1b1ea412c586";
     private BSC_MAINNET_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`
     private BSC_TEST_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`
@@ -79,8 +82,8 @@ export default class Ape {
         this.token1 = values.token1;
         this.pair = values.pair;
 
-        // currently support WBNB pairs only
-        if (process.env.NODE_ENV != 'development' && values.token0 !== Symbols.wbnb && values.token1 !== Symbols.wbnb) {
+        // currently support WBNB pairs
+        if (values.token0 !== Symbols.wbnb && values.token1 !== Symbols.wbnb) {
             return;
         }
 
