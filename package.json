@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "pkgmac": "proxychains4 pkg . -o ApeKill",
-    "webpack": "webpack --watch --progress",
-    "run": "proxychains4 ts-node src/Index.ts"
+    "pkgexe": "proxychains4 pkg .",
+    "webpack": "webpack --no-watch",
+    "run": "proxychains4 ts-node src/Index.ts",
+    "build": "npm run webpack && npm run pkgexe"
   },
   "keywords": [],
   "author": "",
