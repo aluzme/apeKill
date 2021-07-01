@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "pkgmac": "pc pkg . -t node8-macos-x64 -o app",
+    "webpack": "webpack --watch --progress",
     "run": "pc ts-node src/Index.ts"
   },
   "keywords": [],
@@ -14,7 +15,10 @@
   "devDependencies": {
     "@types/inquirer": "^7.3.2",
     "@types/node": "^15.12.5",
-    "eslint": "^7.29.0"
+    "eslint": "^7.29.0",
+    "ts-loader": "^9.2.3",
+    "webpack": "^5.41.1",
+    "webpack-cli": "^4.7.2"
   },
   "dependencies": {
     "abi-decoder": "^2.4.0",

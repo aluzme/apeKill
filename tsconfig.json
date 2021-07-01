@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "outDir": "build",
+    "outDir": "./build/",
     "noImplicitAny": true,
     "lib": [
       "ES6",
       "esnext",
       "dom"
     ],
-    "module": "commonjs",
+    "module": "es6",
     "target": "es6",
     "allowJs": false,
     "moduleResolution": "node",
@@ -16,5 +16,6 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "sourceMap": true,
+    "declaration": true,
   },
 }
