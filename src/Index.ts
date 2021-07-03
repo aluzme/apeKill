@@ -13,7 +13,6 @@ const Input = () => {
 				type: "input",
 				name: "targetToken",
 				message: "Input Target Token Address:",
-				default: "0x",
 			},
 		])
 		.then((address) => {
