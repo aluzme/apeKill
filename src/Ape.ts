@@ -20,23 +20,25 @@ export default class Ape {
 	private routerAddress: string = process.env.NODE_ENV == "development" ? process.env.ROUTER_TEST_ADDRESS : process.env.ROUTER_MAIN_ADDRESS;
 	private factoryAddress: string = process.env.NODE_ENV == "development" ? process.env.FACTORY_TEST_ADDRESS : process.env.FACTORY_MAIN_ADDRESS;
 	private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
-	private tartgetTokenAddress: string = process.env.TARGET_TOKEN_TOBUY;
+	private tartgetTokenAddress: string;
 	private defaultGas = toWei(process.env.GAS_PRICE, "gwei");
 	private gasLimit: string = process.env.GAS_LIMIT;
 
-	private getBlockAPIKEY = "212a00f7-19e6-4c91-987f-1b1ea412c586";
-	private BSC_MAINNET_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
-	private BSC_TEST_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
+	//private getBlockAPIKEY = "212a00f7-19e6-4c91-987f-1b1ea412c586";
+	// private BSC_MAINNET_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
+	// private BSC_TEST_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
 
-	private BSC_TEST_HTTP: string = "https://data-seed-prebsc-1-s1.binance.org:8545/";
+	private BSC_MAIN_HTTP: string = process.env.WEB3_HTTP_MAINNET_PROVIDER;
+	private BSC_TEST_HTTP: string = process.env.WEB3_HTTP_TESTNET_PROVIDER;
 
-	public constructor() {
+	public constructor(target: string) {
 		if (process.env.NODE_ENV == "development") {
 			this.web3 = new Web3(this.BSC_TEST_HTTP);
 		} else {
-			this.web3 = new Web3(this.BSC_MAINNET_WS);
+			this.web3 = new Web3(this.BSC_MAIN_HTTP);
 		}
 
+		this.tartgetTokenAddress = target;
 		this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
 
 		// load ABIs into decoder
@@ -65,14 +67,19 @@ export default class Ape {
 		} else if (PairLP != "0x0000000000000000000000000000000000000000") {
 			this.pair = PairLP;
 			const reserve = await this.getReserve(this.pair);
+
+			let targetTokenReserve: any = this.token0 === Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 			let bnbReserve: any = this.token1 === Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
+
+			targetTokenReserve = fromWei(targetTokenReserve.toFixed());
 			bnbReserve = fromWei(bnbReserve.toFixed());
-			if (bnbReserve == 0) {
-				this.logger.log(`Pair Info: ${this.pair} reserve: ${bnbReserve} BNB`);
+
+			if (parseInt(bnbReserve) == 0) {
+				this.logger.log(`Pair Info: ${this.pair} reserve: BNB:${bnbReserve} - Target:${targetTokenReserve}`);
 				await this.sleep(300);
 				this.watchOne();
-			} else if (bnbReserve >= 0) {
-				this.logger.log(`Pair Info: ${this.pair} reserve: ${bnbReserve} BNB`);
+			} else if (parseInt(bnbReserve) > 0) {
+				this.logger.log(`Pair Info: ${this.pair} reserve: BNB:${bnbReserve} - Target:${targetTokenReserve}`);
 				this.Buy();
 			}
 		}
