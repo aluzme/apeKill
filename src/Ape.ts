@@ -1,7 +1,7 @@
 import Web3 from "web3";
 import { Account, TransactionReceipt, TransactionConfig } from "web3-core";
 import { fromWei, toWei } from "web3-utils";
-import { Topics, Symbols, Reserve } from "./Models";
+import { Topics, Reserve } from "./Models";
 import BN, { BigNumber } from "bignumber.js";
 import Utils from "./Utils";
 import Logger from "./Logger";
@@ -23,6 +23,7 @@ export default class Ape {
 	private tartgetTokenAddress: string;
 	private defaultGas = toWei(process.env.GAS_PRICE, "gwei");
 	private gasLimit: string = process.env.GAS_LIMIT;
+	private Symbols = { wbnb: process.env.WBNB_ADDRESS };
 
 	//private getBlockAPIKEY = "212a00f7-19e6-4c91-987f-1b1ea412c586";
 	// private BSC_MAINNET_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
@@ -57,7 +58,7 @@ export default class Ape {
 
 	public async watchOne() {
 		this.token0 = this.tartgetTokenAddress;
-		this.token1 = Symbols.wbnb;
+		this.token1 = this.Symbols.wbnb;
 
 		const PairLP: string = await this.getPair(this.token0, this.token1);
 		if (PairLP == "0x0000000000000000000000000000000000000000") {
@@ -68,8 +69,8 @@ export default class Ape {
 			this.pair = PairLP;
 			const reserve = await this.getReserve(this.pair);
 
-			let targetTokenReserve: any = this.token0 === Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
-			let bnbReserve: any = this.token1 === Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
+			let targetTokenReserve: any = this.token0 === this.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
+			let bnbReserve: any = this.token1 === this.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
 			targetTokenReserve = fromWei(targetTokenReserve.toFixed());
 			bnbReserve = fromWei(bnbReserve.toFixed());
@@ -132,13 +133,13 @@ export default class Ape {
 		this.pair = values.pair;
 
 		// currently support WBNB pairs
-		if (values.token0 !== Symbols.wbnb && values.token1 !== Symbols.wbnb) {
+		if (values.token0 !== this.Symbols.wbnb && values.token1 !== this.Symbols.wbnb) {
 			return;
 		}
 
 		const reserve = await this.getReserve(values.pair);
 
-		const bnbReserve = values.token0 === Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
+		const bnbReserve = values.token0 === this.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
 		this.logger.log(`New pair created: ${values.pair} reserve: ${fromWei(bnbReserve.toFixed())} BNB`);
 
@@ -200,7 +201,7 @@ export default class Ape {
 				// amountOutMin
 				"0",
 				// path
-				[Symbols.wbnb, token],
+				[this.Symbols.wbnb, token],
 				// to address
 				this.account.address,
 				// deadline
@@ -284,5 +285,5 @@ export default class Ape {
 		}, 60 * 1000);
 	}
 
-	private getOtherSideToken = () => (this.token0 === Symbols.wbnb ? this.token1 : this.token0);
+	private getOtherSideToken = () => (this.token0 === this.Symbols.wbnb ? this.token1 : this.token0);
 }
