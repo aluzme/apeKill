@@ -16,14 +16,8 @@ export default class Ape {
 	private token0: string;
 	private token1: string;
 
-	private routerAddress: string =
-		process.env.NODE_ENV == "development"
-			? process.env.ROUTER_TEST_ADDRESS
-			: process.env.ROUTER_MAIN_ADDRESS;
-	private factoryAddress: string =
-		process.env.NODE_ENV == "development"
-			? process.env.FACTORY_TEST_ADDRESS
-			: process.env.FACTORY_MAIN_ADDRESS;
+	private routerAddress: string = process.env.NODE_ENV == "development" ? process.env.ROUTER_TEST_ADDRESS : process.env.ROUTER_MAIN_ADDRESS;
+	private factoryAddress: string = process.env.NODE_ENV == "development" ? process.env.FACTORY_TEST_ADDRESS : process.env.FACTORY_MAIN_ADDRESS;
 	private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
 	private tartgetAddress: string = process.env.TARGET_TOKEN_TOBUY;
 	private defaultGas = toWei(process.env.GAS_PRICE, "gwei");
@@ -33,16 +27,16 @@ export default class Ape {
 	private BSC_MAINNET_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
 	private BSC_TEST_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
 
+	private BSC_TEST_HTTP: string = "https://bsc-dataseed2.defibit.io/";
+
 	public constructor() {
 		if (process.env.NODE_ENV == "development") {
-			this.web3 = new Web3(this.BSC_TEST_WS);
+			this.web3 = new Web3(this.BSC_TEST_HTTP);
 		} else {
 			this.web3 = new Web3(this.BSC_MAINNET_WS);
 		}
 
-		this.account = this.web3.eth.accounts.privateKeyToAccount(
-			process.env.ACCOUNT_PK
-		);
+		this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
 
 		// load ABIs into decoder
 		this.abiDecoder.addABI(require("../ABIs/IPancakeFactoryV2.json"));
@@ -53,7 +47,8 @@ export default class Ape {
 		this.logger.log(`factoryAddress => ${this.factoryAddress}`);
 		this.logger.log(`Target Token: ${this.tartgetAddress}`);
 
-		this.watch();
+		//this.watch();
+		this.checkBalance();
 	}
 
 	// Start monitoring pair created events
@@ -97,16 +92,9 @@ export default class Ape {
 
 		const reserve = await this.getReserve(values.pair);
 
-		const bnbReserve =
-			values.token0 === Symbols.wbnb
-				? reserve.reserve0
-				: reserve.reserve1;
+		const bnbReserve = values.token0 === Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
-		this.logger.log(
-			`New pair created: ${values.pair} BNB reserve: ${fromWei(
-				bnbReserve.toFixed()
-			)}`
-		);
+		this.logger.log(`New pair created: ${values.pair} BNB reserve: ${fromWei(bnbReserve.toFixed())}`);
 
 		// if LP == 0
 		if (bnbReserve.eq(0)) {
@@ -122,10 +110,7 @@ export default class Ape {
 
 	private getReserve(pair: string) {
 		return new Promise<Reserve>((resolve, reject) => {
-			const PairContract = new this.web3.eth.Contract(
-				require("../ABIs/IPancakePair.json"),
-				pair
-			);
+			const PairContract = new this.web3.eth.Contract(require("../ABIs/IPancakePair.json"), pair);
 			PairContract.methods
 				.getReserves()
 				.call()
@@ -140,31 +125,18 @@ export default class Ape {
 
 	// Pancake Router Contract Instantce
 	private router() {
-		return new this.web3.eth.Contract(
-			require("../ABIs/IPancakeRouterV2.json"),
-			this.routerAddress
-		);
+		return new this.web3.eth.Contract(require("../ABIs/IPancakeRouterV2.json"), this.routerAddress);
 	}
 
 	// pancake Facotry Contract Instance
 	private factory() {
-		return new this.web3.eth.Contract(
-			require("../ABIs/IPancakeFactoryV2.json"),
-			this.routerAddress
-		);
+		return new this.web3.eth.Contract(require("../ABIs/IPancakeFactoryV2.json"), this.routerAddress);
 	}
 
 	private Buy() {
 		try {
-			this.logger.log(
-				`BUY Token: ${this.getOtherSideToken()} with ${
-					this.defaultBuyIn
-				} BNB`
-			);
-			this.swapExactETHForTokens(
-				this.getOtherSideToken(),
-				this.defaultBuyIn
-			)
+			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${this.defaultBuyIn} BNB`);
+			this.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
 				.then((reveived) => {
 					this.logger.log(reveived.toString());
 				})
@@ -191,18 +163,9 @@ export default class Ape {
 				Math.round(new Date().getTime() / 1000) + 30
 			);
 
-			this.sendSignedTX(
-				this.account,
-				this.routerAddress,
-				this.gasLimit,
-				this.defaultGas,
-				methodCall,
-				amount
-			)
+			this.sendSignedTX(this.account, this.routerAddress, this.gasLimit, this.defaultGas, methodCall, amount)
 				.then((receipt) => {
-					const decodedLogs = this.abiDecoder.decodedLogs(
-						receipt.logs
-					);
+					const decodedLogs = this.abiDecoder.decodedLogs(receipt.logs);
 					const swapped = this.getSwappedAmount(decodedLogs);
 
 					if (swapped) {
@@ -210,9 +173,7 @@ export default class Ape {
 						return;
 					}
 
-					this.logger.error(
-						`Failed to decode swapped amount for txn ${receipt.transactionHash}`
-					);
+					this.logger.error(`Failed to decode swapped amount for txn ${receipt.transactionHash}`);
 				})
 				.catch((error) => {
 					reject(error);
@@ -220,14 +181,7 @@ export default class Ape {
 		});
 	}
 
-	private sendSignedTX(
-		account: Account,
-		to: string,
-		gas: string,
-		gasPrice: string,
-		methodCall: any,
-		value: string = "0"
-	) {
+	private sendSignedTX(account: Account, to: string, gas: string, gasPrice: string, methodCall: any, value: string = "0") {
 		return new Promise<TransactionReceipt>(async (resolve, reject) => {
 			const encodedABI = methodCall.encodeABI();
 			const tx: TransactionConfig = {
@@ -247,9 +201,7 @@ export default class Ape {
 				.sendSignedTransaction(signedTX.rawTransaction)
 				.on("transactionHash", (hash) => {
 					TXSubmitted = true;
-					this.logger.log(
-						`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`
-					);
+					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
 				})
 				.on("receipt", (receipt) => {
 					//this.logger.log(receipt)
@@ -271,35 +223,24 @@ export default class Ape {
 			}
 
 			const props = Utils.decodedEventsToArray(log);
-			swappedAmount = new BigNumber(
-				props.amount0In === "0" ? props.amount0Out : props.amount1Out
-			);
+			swappedAmount = new BigNumber(props.amount0In === "0" ? props.amount0Out : props.amount1Out);
 		});
 
 		return swappedAmount;
 	}
 
-	// private checkBalance() {
-	// 	this.web3
-	// 		.accountBalance()
-	// 		.then((balance) => {
-	// 			this.logger.log(
-	// 				`Current account balance: ${fromWei(balance.toFixed())} BNB`
-	// 			);
+	private async checkBalance() {
+		try {
+			const balance = await this.web3.eth.getBalance(this.account.address);
+			this.logger.log(`Current account balance: ${fromWei(new BigNumber(balance).toFixed())} BNB`);
+		} catch (error) {
+			this.logger.error(error);
+		}
 
-	// 			this.sufficientBalance = balance.gt(this.minBalance);
-	// 		})
-	// 		.catch((error) => {
-	// 			this.logger.error(
-	// 				`Error while checking balance: ${error.message}`
-	// 			);
-	// 		});
+		setTimeout(() => {
+			this.checkBalance();
+		}, 60 * 1000);
+	}
 
-	// 	setTimeout(() => {
-	// 		this.checkBalance();
-	// 	}, 60 * 1000);
-	// }
-
-	private getOtherSideToken = () =>
-		this.token0 === Symbols.wbnb ? this.token1 : this.token0;
+	private getOtherSideToken = () => (this.token0 === Symbols.wbnb ? this.token1 : this.token0);
 }
