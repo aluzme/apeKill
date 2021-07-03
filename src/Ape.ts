@@ -5,6 +5,7 @@ import { Topics, Symbols, Reserve } from "./Models";
 import BN, { BigNumber } from "bignumber.js";
 import Utils from "./Utils";
 import Logger from "./Logger";
+import { throws } from "assert/strict";
 export default class Ape {
 	// web3 provider
 	private web3: Web3;
@@ -19,7 +20,7 @@ export default class Ape {
 	private routerAddress: string = process.env.NODE_ENV == "development" ? process.env.ROUTER_TEST_ADDRESS : process.env.ROUTER_MAIN_ADDRESS;
 	private factoryAddress: string = process.env.NODE_ENV == "development" ? process.env.FACTORY_TEST_ADDRESS : process.env.FACTORY_MAIN_ADDRESS;
 	private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
-	private tartgetAddress: string = process.env.TARGET_TOKEN_TOBUY;
+	private tartgetTokenAddress: string = process.env.TARGET_TOKEN_TOBUY;
 	private defaultGas = toWei(process.env.GAS_PRICE, "gwei");
 	private gasLimit: string = process.env.GAS_LIMIT;
 
@@ -27,7 +28,7 @@ export default class Ape {
 	private BSC_MAINNET_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
 	private BSC_TEST_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
 
-	private BSC_TEST_HTTP: string = "https://bsc-dataseed2.defibit.io/";
+	private BSC_TEST_HTTP: string = "https://data-seed-prebsc-1-s1.binance.org:8545/";
 
 	public constructor() {
 		if (process.env.NODE_ENV == "development") {
@@ -43,16 +44,42 @@ export default class Ape {
 		this.abiDecoder.addABI(require("../ABIs/IPancakeRouterV2.json"));
 
 		this.logger.log(`ENV => ${process.env.NODE_ENV}`);
+		this.logger.log(`Current Bot Address => ${this.account.address}`);
 		this.logger.log(`routerAddress => ${this.routerAddress}`);
 		this.logger.log(`factoryAddress => ${this.factoryAddress}`);
-		this.logger.log(`Target Token: ${this.tartgetAddress}`);
+		this.logger.log(`Target Token: ${this.tartgetTokenAddress}`);
 
-		//this.watch();
+		this.watchOne();
 		this.checkBalance();
 	}
 
+	public async watchOne() {
+		this.token0 = this.tartgetTokenAddress;
+		this.token1 = Symbols.wbnb;
+
+		const PairLP: string = await this.getPair(this.token0, this.token1);
+		if (PairLP == "0x0000000000000000000000000000000000000000") {
+			this.logger.log("Searching for pair...");
+			await this.sleep(300);
+			this.watchOne();
+		} else if (PairLP != "0x0000000000000000000000000000000000000000") {
+			this.pair = PairLP;
+			const reserve = await this.getReserve(this.pair);
+			let bnbReserve: any = this.token1 === Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
+			bnbReserve = fromWei(bnbReserve.toFixed());
+			if (bnbReserve == 0) {
+				this.logger.log(`Pair Info: ${this.pair} reserve: ${bnbReserve} BNB`);
+				await this.sleep(300);
+				this.watchOne();
+			} else if (bnbReserve >= 0) {
+				this.logger.log(`Pair Info: ${this.pair} reserve: ${bnbReserve} BNB`);
+				this.Buy();
+			}
+		}
+	}
+
 	// Start monitoring pair created events
-	public watch() {
+	public watchAll() {
 		this.web3.eth
 			.subscribe("logs", {
 				address: this.factoryAddress,
@@ -69,6 +96,18 @@ export default class Ape {
 				this.logger.error("WSS Connection Error. Program will reboot.");
 				process.exit(1);
 			});
+	}
+
+	private getPair(tokenA: string, tokenB: string) {
+		return new Promise<string>(async (resolve, reject) => {
+			const factory = this.factory();
+			try {
+				const Pair = await factory.methods.getPair(tokenA, tokenB).call();
+				resolve(Pair);
+			} catch (error) {
+				reject(error);
+			}
+		});
 	}
 
 	private sleep(ms: number) {
@@ -94,16 +133,14 @@ export default class Ape {
 
 		const bnbReserve = values.token0 === Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
-		this.logger.log(`New pair created: ${values.pair} BNB reserve: ${fromWei(bnbReserve.toFixed())}`);
+		this.logger.log(`New pair created: ${values.pair} reserve: ${fromWei(bnbReserve.toFixed())} BNB`);
 
 		// if LP == 0
 		if (bnbReserve.eq(0)) {
 			return;
 		}
 
-		if (this.getOtherSideToken() == this.tartgetAddress) {
-			this.Buy();
-		}
+		//this.Buy();
 
 		return;
 	}
@@ -130,12 +167,12 @@ export default class Ape {
 
 	// pancake Facotry Contract Instance
 	private factory() {
-		return new this.web3.eth.Contract(require("../ABIs/IPancakeFactoryV2.json"), this.routerAddress);
+		return new this.web3.eth.Contract(require("../ABIs/IPancakeFactoryV2.json"), this.factoryAddress);
 	}
 
 	private Buy() {
 		try {
-			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${this.defaultBuyIn} BNB`);
+			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} wei BNB`);
 			this.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
 				.then((reveived) => {
 					this.logger.log(reveived.toString());
@@ -207,9 +244,7 @@ export default class Ape {
 					//this.logger.log(receipt)
 				})
 				.on("error", async (error) => {
-					if (!TXSubmitted && error.message.indexOf("") !== -1) {
-						this.logger.log("insufficient funds for gas");
-					}
+					this.logger.log(error.message);
 				});
 		});
 	}
