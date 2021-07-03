@@ -2,3 +2,6 @@ node_modules
 config.env
 build
 .DS_Store
+apekill-linux
+apekill-macos
+apekill-win.exe
