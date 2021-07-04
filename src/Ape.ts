@@ -8,6 +8,7 @@ import Logger from "./Logger";
 import { throws } from "assert/strict";
 import ora from "ora";
 import inquirer from "inquirer";
+import { urlToHttpOptions } from "http";
 
 export default class Ape {
 	// web3 provider
@@ -216,8 +217,9 @@ export default class Ape {
 		try {
 			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} BNB`);
 			this.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
-				.then((reveived) => {
+				.then(async (reveived) => {
 					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} BNB, Got Token ${fromWei(reveived.toFixed())}`);
+					await this.checkBalance();
 				})
 				.catch((error) => {
 					this.logger.error(error);
@@ -308,7 +310,7 @@ export default class Ape {
 					}
 
 					if (!TXSubmitted && error.message.indexOf("transaction underpriced") !== -1) {
-						this.logger.error(`Error: ${error.message}. Retrying...`);
+						this.logger.error(`${error.message}. Retrying...`);
 
 						newGasPrice += 1000000000;
 						newGasPrice = newGasPrice.toString();
@@ -321,7 +323,7 @@ export default class Ape {
 						return;
 					}
 
-					this.logger.error(`Error: ${error.message}`);
+					this.logger.error(`${error.message}`);
 					reject(error);
 				});
 		});
