@@ -35,6 +35,7 @@ export default class Ape {
 
 	private BSC_MAIN_HTTP: string = process.env.WEB3_HTTP_MAINNET_PROVIDER;
 	private BSC_TEST_HTTP: string = process.env.WEB3_HTTP_TESTNET_PROVIDER;
+	private RPC_URL: string;
 
 	public constructor() {
 		inquirer
@@ -43,18 +44,22 @@ export default class Ape {
 					type: "input",
 					name: "targetToken",
 					message: "Input Target Token Address:",
+					default: "0x00a57F51A122f2Bfc6FFe59D86e2f97e9cA61C04",
 				},
 			])
-			.then((address) => {
+			.then(async (address) => {
 				const data = address.targetToken.toLowerCase();
 
 				if (Web3.utils.isAddress(data)) {
 					this.tartgetTokenAddress = data;
 
 					if (process.env.NODE_ENV == "development") {
-						this.web3 = new Web3(this.BSC_TEST_HTTP);
+						this.RPC_URL = this.BSC_TEST_HTTP;
+						console.log(this.RPC_URL);
+						this.web3 = new Web3(this.RPC_URL);
 					} else {
-						this.web3 = new Web3(this.BSC_MAIN_HTTP);
+						this.RPC_URL = this.BSC_MAIN_HTTP;
+						this.web3 = new Web3(this.RPC_URL);
 					}
 
 					this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
@@ -63,12 +68,13 @@ export default class Ape {
 					this.abiDecoder.addABI(require("../ABIs/IPancakeFactoryV2.json"));
 					this.abiDecoder.addABI(require("../ABIs/IPancakeRouterV2.json"));
 
-					this.logger.log(`ENV => ${process.env.NODE_ENV}`);
-					this.logger.log(`Current Bot Address => ${this.account.address}`);
-					this.logger.log(`routerAddress => ${this.routerAddress}`);
-					this.logger.log(`factoryAddress => ${this.factoryAddress}`);
+					this.logger.log(`Network => ${this.RPC_URL}`);
+					this.logger.log(`RouterAddress => ${this.routerAddress}`);
+					this.logger.log(`FactoryAddress => ${this.factoryAddress}`);
 					this.logger.log(`Target Token: ${this.tartgetTokenAddress}`);
-					this.checkBalance();
+					this.logger.log(`------- Bot Info ----------`);
+					this.logger.log(`Current Bot Address => ${this.account.address}`);
+					await this.checkBalance();
 
 					this.InputTargetAddress();
 
