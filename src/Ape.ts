@@ -7,6 +7,8 @@ import Utils from "./Utils";
 import Logger from "./Logger";
 import ora from "ora";
 import inquirer from "inquirer";
+import ListNode from "./ListNode";
+import { title } from "process";
 
 export default class Ape {
 	// web3 provider
@@ -20,7 +22,7 @@ export default class Ape {
 	private token0: string;
 	private token1: string;
 
-	private routerAddress: string = process.env.ROUTER_ADDRESS;
+	private routerAddress: string;
 	private factoryAddress: string;
 	private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
 	private tartgetTokenAddress: string;
@@ -38,7 +40,7 @@ export default class Ape {
 	private gasLimit: string = process.env.GAS_LIMIT;
 	private wbnbAddress: string = "0x0";
 	private Symbols: any;
-	private RPC_URL: string = process.env.WEB3_HTTP_PROVIDER;
+	private RPC_URL: string;
 
 	public constructor() {
 		this.Init();
@@ -60,7 +62,14 @@ export default class Ape {
 				if (Web3.utils.isAddress(data)) {
 					this.tartgetTokenAddress = data;
 
-					this.web3 = new Web3(this.RPC_URL);
+					try {
+						const network = await this.selectNetwork();
+						this.RPC_URL = network.RPC_URL;
+						this.web3 = new Web3(this.RPC_URL);
+						this.routerAddress = network.Rourter_Address;
+					} catch (error) {
+						console.log(error);
+					}
 
 					this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
 					this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
@@ -87,6 +96,37 @@ export default class Ape {
 					this.Init();
 				}
 			});
+	}
+
+	private async selectNetwork() {
+		const networkList = [
+			{
+				name: "BSC_MAINNET",
+				value: {
+					Network: "BSC_MAINNET",
+					RPC_URL: "https://bsc-dataseed1.binance.org/",
+					Rourter_Address: "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+				},
+			},
+			{
+				name: "BSC_TESTNET",
+				value: {
+					Network: "BSC_TESTNET",
+					RPC_URL: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+					Rourter_Address: "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3",
+				},
+			},
+			{
+				name: "Matic_MAINNET",
+				value: {
+					Network: "Matic_MAINNET",
+					RPC_URL: "https://rpc-mainnet.maticvigil.com/",
+					Rourter_Address: "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff",
+				},
+			},
+		];
+		const result = new ListNode("Select Network:", networkList);
+		return await result.run();
 	}
 
 	public async watchOne() {

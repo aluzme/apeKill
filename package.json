@@ -4,13 +4,13 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"rmBuild": "rm -r -f ./build && rm apekill-linux apekill-win.exe apekill-macos",
+		"genPack": "zip ApeKill.zip apekill-macos apekill-win.exe config.env",
+		"clean": "rm -r -f ./build && rm apekill-linux apekill-win.exe apekill-macos ApeKill.zip",
 		"pkgexe": "proxychains4 pkg .",
 		"webpack": "webpack --no-watch",
 		"run": "proxychains4 ts-node src/Index.ts",
-		"build": "npm run webpack && proxychains4 npm run pkgexe",
-		"rm&build": "npm run rmBuild && npm run build",
-		"genPack": "zip apeKill.zip apekill-macos apekill-win.exe config.env"
+		"build": "npm run webpack && proxychains4 npm run pkgexe && npm run genPack",
+		"rmAndBuild": "npm run clean && npm run build"
 	},
 	"keywords": [],
 	"author": "",
@@ -26,6 +26,7 @@
 	"dependencies": {
 		"abi-decoder": "^2.4.0",
 		"bignumber.js": "^9.0.1",
+		"commander": "^2.20.3",
 		"dotenv": "^10.0.0",
 		"inquirer": "^8.1.1",
 		"ora": "^5.4.1",
