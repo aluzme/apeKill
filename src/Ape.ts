@@ -12,30 +12,34 @@ import inquirer from "inquirer";
 export default class Ape {
 	// web3 provider
 	private web3: Web3;
-	private account: Account;
 	private abiDecoder = require("abi-decoder");
 	private logger: Logger = new Logger("Ape");
+	private spinner = ora("Searching for pair...");
 
+	// pair info
 	private pair: string;
 	private token0: string;
 	private token1: string;
 
-	private routerAddress: string = process.env.NODE_ENV == "development" ? process.env.ROUTER_TEST_ADDRESS : process.env.ROUTER_MAIN_ADDRESS;
-	private factoryAddress: string = process.env.NODE_ENV == "development" ? process.env.FACTORY_TEST_ADDRESS : process.env.FACTORY_MAIN_ADDRESS;
+	private routerAddress: string = process.env.ROUTER_ADDRESS;
+	private factoryAddress: string;
 	private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
 	private tartgetTokenAddress: string;
-	private defaultGas = toWei(process.env.GAS_PRICE, "gwei");
-	private gasLimit: string = process.env.GAS_LIMIT;
-	private Symbols = { wbnb: process.env.WBNB_ADDRESS };
-	private spinner = ora("Searching for pair...");
 
-	//private getBlockAPIKEY = "212a00f7-19e6-4c91-987f-1b1ea412c586";
+	// Wallet info
+	private account: Account;
+	private nonce: number;
+
+	// private getBlockAPIKEY = "212a00f7-19e6-4c91-987f-1b1ea412c586";
 	// private BSC_MAINNET_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
 	// private BSC_TEST_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
 
-	private BSC_MAIN_HTTP: string = process.env.WEB3_HTTP_MAINNET_PROVIDER;
-	private BSC_TEST_HTTP: string = process.env.WEB3_HTTP_TESTNET_PROVIDER;
-	private RPC_URL: string;
+	// Network config
+	private defaultGas = toWei(process.env.GAS_PRICE, "gwei");
+	private gasLimit: string = process.env.GAS_LIMIT;
+	private wbnbAddress: string = "0x0";
+	private Symbols: any;
+	private RPC_URL: string = process.env.WEB3_HTTP_PROVIDER;
 
 	public constructor() {
 		inquirer
@@ -53,24 +57,22 @@ export default class Ape {
 				if (Web3.utils.isAddress(data)) {
 					this.tartgetTokenAddress = data;
 
-					if (process.env.NODE_ENV == "development") {
-						this.RPC_URL = this.BSC_TEST_HTTP;
-						console.log(this.RPC_URL);
-						this.web3 = new Web3(this.RPC_URL);
-					} else {
-						this.RPC_URL = this.BSC_MAIN_HTTP;
-						this.web3 = new Web3(this.RPC_URL);
-					}
+					this.web3 = new Web3(this.RPC_URL);
 
 					this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
+					this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
 
+					this.factoryAddress = await this.router().methods.factory().call();
+					this.wbnbAddress = await this.router().methods.WETH().call();
+					this.Symbols = { wbnb: this.wbnbAddress };
+
+					console.log(this.wbnbAddress);
 					// load ABIs into decoder
 					this.abiDecoder.addABI(require("../ABIs/IPancakeFactoryV2.json"));
 					this.abiDecoder.addABI(require("../ABIs/IPancakeRouterV2.json"));
 
 					this.logger.log(`Network => ${this.RPC_URL}`);
 					this.logger.log(`RouterAddress => ${this.routerAddress}`);
-					this.logger.log(`FactoryAddress => ${this.factoryAddress}`);
 					this.logger.log(`Target Token: ${this.tartgetTokenAddress}`);
 					this.logger.log(`------- Bot Info ----------`);
 					this.logger.log(`Current Bot Address => ${this.account.address}`);
@@ -269,6 +271,11 @@ export default class Ape {
 				gasPrice: gasPrice,
 			};
 
+			if (this.nonce !== null) {
+				tx.nonce = this.nonce;
+				this.nonce++;
+			}
+
 			const signedTX = await account.signTransaction(tx);
 
 			let TXSubmitted = false;
@@ -280,10 +287,26 @@ export default class Ape {
 					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
 				})
 				.on("receipt", (receipt) => {
-					//this.logger.log(receipt)
+					resolve(receipt);
 				})
 				.on("error", async (error) => {
-					this.logger.log(error.message);
+					if (!TXSubmitted && error.message.indexOf("insufficient funds for gas") !== -1) {
+						this.nonce--;
+					}
+					if (!TXSubmitted && error.message.toLowerCase().indexOf("nonce too low") !== -1) {
+						this.logger.error(`Error: ${error.message}. Retrying...`);
+
+						this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
+						this.sendSignedTX(account, to, gas, gasPrice, methodCall, value)
+							.then((retryResult) => {
+								resolve(retryResult);
+							})
+							.catch((retryError) => reject(retryError));
+						return;
+					}
+
+					this.logger.error(`Error: ${error.message}`);
+					reject(error);
 				});
 		});
 	}
