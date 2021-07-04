@@ -48,7 +48,7 @@ export default class Ape {
 					type: "input",
 					name: "targetToken",
 					message: "Input Target Token Address:",
-					default: "0x00a57F51A122f2Bfc6FFe59D86e2f97e9cA61C04",
+					default: "0x?",
 				},
 			])
 			.then(async (address) => {
@@ -66,16 +66,16 @@ export default class Ape {
 					this.wbnbAddress = await this.router().methods.WETH().call();
 					this.Symbols = { wbnb: this.wbnbAddress };
 
-					console.log(this.wbnbAddress);
 					// load ABIs into decoder
 					this.abiDecoder.addABI(require("../ABIs/IPancakeFactoryV2.json"));
 					this.abiDecoder.addABI(require("../ABIs/IPancakeRouterV2.json"));
+					this.abiDecoder.addABI(require("../ABIs/IPancakePair.json"));
 
 					this.logger.log(`Network => ${this.RPC_URL}`);
 					this.logger.log(`RouterAddress => ${this.routerAddress}`);
-					this.logger.log(`Target Token: ${this.tartgetTokenAddress}`);
+					this.logger.log(`Target Token => ${this.tartgetTokenAddress}`);
 					this.logger.log(`------- Bot Info ----------`);
-					this.logger.log(`Current Bot Address => ${this.account.address}`);
+					this.logger.log(`Current Bot Address: ${this.account.address}`);
 					await this.checkBalance();
 
 					this.InputTargetAddress();
@@ -105,15 +105,16 @@ export default class Ape {
 			let targetTokenReserve: any = this.token0 === this.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 			let bnbReserve: any = this.token1 === this.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
-			targetTokenReserve = fromWei(targetTokenReserve.toFixed());
-			bnbReserve = fromWei(bnbReserve.toFixed());
+			//console.log(`Pair Info: ${this.pair} reserve: BNB:${bnbReserve} - Target:${targetTokenReserve}`);
 
-			if (parseInt(bnbReserve) == 0) {
-				this.logger.log(`Pair Info: ${this.pair} reserve: BNB:${bnbReserve} - Target:${targetTokenReserve}`);
+			if (bnbReserve.eq(0)) {
+				this.spinner.stop();
+				this.logger.log(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`);
 				await this.sleep(300);
 				this.watchOne();
-			} else if (parseInt(bnbReserve) > 0) {
-				this.logger.log(`Pair Info: ${this.pair} reserve: BNB:${bnbReserve} - Target:${targetTokenReserve}`);
+			} else {
+				this.spinner.stop();
+				this.logger.log(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`);
 				this.Buy();
 			}
 		}
@@ -216,7 +217,7 @@ export default class Ape {
 			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} BNB`);
 			this.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
 				.then((reveived) => {
-					this.logger.log(reveived.toString());
+					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} BNB, Got Token ${fromWei(reveived.toFixed())}`);
 				})
 				.catch((error) => {
 					this.logger.error(error);
@@ -243,7 +244,7 @@ export default class Ape {
 
 			this.sendSignedTX(this.account, this.routerAddress, this.gasLimit, this.defaultGas, methodCall, amount)
 				.then((receipt) => {
-					const decodedLogs = this.abiDecoder.decodedLogs(receipt.logs);
+					const decodedLogs = this.abiDecoder.decodeLogs(receipt.logs);
 					const swapped = this.getSwappedAmount(decodedLogs);
 
 					if (swapped) {
@@ -277,6 +278,7 @@ export default class Ape {
 			}
 
 			const signedTX = await account.signTransaction(tx);
+			let newGasPrice: any = parseInt(gasPrice);
 
 			let TXSubmitted = false;
 
@@ -305,6 +307,20 @@ export default class Ape {
 						return;
 					}
 
+					if (!TXSubmitted && error.message.indexOf("transaction underpriced") !== -1) {
+						this.logger.error(`Error: ${error.message}. Retrying...`);
+
+						newGasPrice += 1000000000;
+						newGasPrice = newGasPrice.toString();
+						this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
+						this.sendSignedTX(account, to, gas, newGasPrice, methodCall, value)
+							.then((retryResult) => {
+								resolve(retryResult);
+							})
+							.catch((retryError) => reject(retryError));
+						return;
+					}
+
 					this.logger.error(`Error: ${error.message}`);
 					reject(error);
 				});
@@ -313,7 +329,6 @@ export default class Ape {
 
 	private getSwappedAmount(decodedLogs: any): BigNumber {
 		let swappedAmount: BigNumber = null;
-
 		decodedLogs.forEach((log: any) => {
 			if (log.name !== "Swap") {
 				return;
