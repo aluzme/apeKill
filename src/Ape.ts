@@ -5,10 +5,8 @@ import { Topics, Reserve } from "./Models";
 import BN, { BigNumber } from "bignumber.js";
 import Utils from "./Utils";
 import Logger from "./Logger";
-import { throws } from "assert/strict";
 import ora from "ora";
 import inquirer from "inquirer";
-import { urlToHttpOptions } from "http";
 
 export default class Ape {
 	// web3 provider
@@ -43,6 +41,10 @@ export default class Ape {
 	private RPC_URL: string = process.env.WEB3_HTTP_PROVIDER;
 
 	public constructor() {
+		this.Init();
+	}
+
+	private Init() {
 		inquirer
 			.prompt([
 				{
@@ -79,16 +81,13 @@ export default class Ape {
 					this.logger.log(`Current Bot Address: ${this.account.address}`);
 					await this.checkBalance();
 
-					this.InputTargetAddress();
-
 					this.watchOne();
 				} else {
 					console.log("Not An Address.");
+					this.Init();
 				}
 			});
 	}
-
-	private InputTargetAddress() {}
 
 	public async watchOne() {
 		this.token0 = this.tartgetTokenAddress;
@@ -297,7 +296,9 @@ export default class Ape {
 					if (!TXSubmitted && error.message.indexOf("insufficient funds for gas") !== -1) {
 						this.nonce--;
 					}
-					if (!TXSubmitted && error.message.toLowerCase().indexOf("nonce too low") !== -1) {
+					// if (!TXSubmitted && error.message.toLowerCase().indexOf("nonce too low") !== -1) {
+
+					if (!TXSubmitted && error) {
 						this.logger.error(`Error: ${error.message}. Retrying...`);
 
 						this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
