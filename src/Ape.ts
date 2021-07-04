@@ -6,6 +6,9 @@ import BN, { BigNumber } from "bignumber.js";
 import Utils from "./Utils";
 import Logger from "./Logger";
 import { throws } from "assert/strict";
+import ora from "ora";
+import inquirer from "inquirer";
+
 export default class Ape {
 	// web3 provider
 	private web3: Web3;
@@ -24,6 +27,7 @@ export default class Ape {
 	private defaultGas = toWei(process.env.GAS_PRICE, "gwei");
 	private gasLimit: string = process.env.GAS_LIMIT;
 	private Symbols = { wbnb: process.env.WBNB_ADDRESS };
+	private spinner = ora("Searching for pair...");
 
 	//private getBlockAPIKEY = "212a00f7-19e6-4c91-987f-1b1ea412c586";
 	// private BSC_MAINNET_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
@@ -32,29 +36,50 @@ export default class Ape {
 	private BSC_MAIN_HTTP: string = process.env.WEB3_HTTP_MAINNET_PROVIDER;
 	private BSC_TEST_HTTP: string = process.env.WEB3_HTTP_TESTNET_PROVIDER;
 
-	public constructor(target: string) {
-		if (process.env.NODE_ENV == "development") {
-			this.web3 = new Web3(this.BSC_TEST_HTTP);
-		} else {
-			this.web3 = new Web3(this.BSC_MAIN_HTTP);
-		}
+	public constructor() {
+		inquirer
+			.prompt([
+				{
+					type: "input",
+					name: "targetToken",
+					message: "Input Target Token Address:",
+				},
+			])
+			.then((address) => {
+				const data = address.targetToken.toLowerCase();
 
-		this.tartgetTokenAddress = target;
-		this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
+				if (Web3.utils.isAddress(data)) {
+					this.tartgetTokenAddress = data;
 
-		// load ABIs into decoder
-		this.abiDecoder.addABI(require("../ABIs/IPancakeFactoryV2.json"));
-		this.abiDecoder.addABI(require("../ABIs/IPancakeRouterV2.json"));
+					if (process.env.NODE_ENV == "development") {
+						this.web3 = new Web3(this.BSC_TEST_HTTP);
+					} else {
+						this.web3 = new Web3(this.BSC_MAIN_HTTP);
+					}
 
-		this.logger.log(`ENV => ${process.env.NODE_ENV}`);
-		this.logger.log(`Current Bot Address => ${this.account.address}`);
-		this.logger.log(`routerAddress => ${this.routerAddress}`);
-		this.logger.log(`factoryAddress => ${this.factoryAddress}`);
-		this.logger.log(`Target Token: ${this.tartgetTokenAddress}`);
+					this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
 
-		this.watchOne();
-		this.checkBalance();
+					// load ABIs into decoder
+					this.abiDecoder.addABI(require("../ABIs/IPancakeFactoryV2.json"));
+					this.abiDecoder.addABI(require("../ABIs/IPancakeRouterV2.json"));
+
+					this.logger.log(`ENV => ${process.env.NODE_ENV}`);
+					this.logger.log(`Current Bot Address => ${this.account.address}`);
+					this.logger.log(`routerAddress => ${this.routerAddress}`);
+					this.logger.log(`factoryAddress => ${this.factoryAddress}`);
+					this.logger.log(`Target Token: ${this.tartgetTokenAddress}`);
+					this.checkBalance();
+
+					this.InputTargetAddress();
+
+					this.watchOne();
+				} else {
+					console.log("Not An Address.");
+				}
+			});
 	}
+
+	private InputTargetAddress() {}
 
 	public async watchOne() {
 		this.token0 = this.tartgetTokenAddress;
@@ -62,7 +87,7 @@ export default class Ape {
 
 		const PairLP: string = await this.getPair(this.token0, this.token1);
 		if (PairLP == "0x0000000000000000000000000000000000000000") {
-			this.logger.log("Searching for pair...");
+			this.spinner.start();
 			await this.sleep(300);
 			this.watchOne();
 		} else if (PairLP != "0x0000000000000000000000000000000000000000") {
@@ -180,7 +205,7 @@ export default class Ape {
 
 	private Buy() {
 		try {
-			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} wei BNB`);
+			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} BNB`);
 			this.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
 				.then((reveived) => {
 					this.logger.log(reveived.toString());
@@ -279,10 +304,6 @@ export default class Ape {
 		} catch (error) {
 			this.logger.error(error);
 		}
-
-		setTimeout(() => {
-			this.checkBalance();
-		}, 60 * 1000);
 	}
 
 	private getOtherSideToken = () => (this.token0 === this.Symbols.wbnb ? this.token1 : this.token0);
