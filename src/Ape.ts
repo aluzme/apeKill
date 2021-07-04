@@ -257,10 +257,12 @@ export default class Ape {
 			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} BNB`);
 			this.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
 				.then(async (reveived) => {
+					this.spinner.stop();
 					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} BNB, Got Token ${fromWei(reveived.toFixed())}`);
 					await this.checkBalance();
 				})
 				.catch((error) => {
+					this.spinner.stop();
 					this.logger.error(error);
 				});
 		} catch (error) {
@@ -328,6 +330,7 @@ export default class Ape {
 				.on("transactionHash", (hash) => {
 					TXSubmitted = true;
 					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
+					this.spinner = ora("Buying...").start();
 				})
 				.on("receipt", (receipt) => {
 					resolve(receipt);
