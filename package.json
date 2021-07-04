@@ -9,7 +9,8 @@
 		"webpack": "webpack --no-watch",
 		"run": "proxychains4 ts-node src/Index.ts",
 		"build": "npm run webpack && proxychains4 npm run pkgexe",
-		"rm&build": "npm run rmBuild && npm run build"
+		"rm&build": "npm run rmBuild && npm run build",
+		"genPack": "zip apeKill.zip apekill-macos apekill-win.exe config.env"
 	},
 	"keywords": [],
 	"author": "",
