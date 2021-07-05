@@ -15,7 +15,7 @@ export default class Ape {
 	private web3: Web3;
 	private abiDecoder = require("abi-decoder");
 	private logger: Logger = new Logger("Ape");
-	private spinner = ora("Searching for pair...");
+	private spinner = ora("Searching token liquidity...");
 
 	// pair info
 	private pair: string;
@@ -101,7 +101,7 @@ export default class Ape {
 	private async selectNetwork() {
 		const networkList = [
 			{
-				name: "BSC_MAINNET",
+				name: "BSC Mainnet",
 				value: {
 					Network: "BSC_MAINNET",
 					RPC_URL: "https://bsc-dataseed1.binance.org/",
@@ -109,7 +109,7 @@ export default class Ape {
 				},
 			},
 			{
-				name: "BSC_TESTNET",
+				name: "BSC Testnet",
 				value: {
 					Network: "BSC_TESTNET",
 					RPC_URL: "https://data-seed-prebsc-1-s1.binance.org:8545/",
@@ -117,10 +117,18 @@ export default class Ape {
 				},
 			},
 			{
-				name: "Matic_MAINNET",
+				name: "Matic Mainnet",
 				value: {
 					Network: "Matic_MAINNET",
 					RPC_URL: "https://rpc-mainnet.maticvigil.com/",
+					Rourter_Address: "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff",
+				},
+			},
+			{
+				name: "Matic Mainnet Backup",
+				value: {
+					Network: "Matic_MAINNET_Backup",
+					RPC_URL: "https://matic.getblock.io/mainnet/?api_key=212a00f7-19e6-4c91-987f-1b1ea412c586",
 					Rourter_Address: "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff",
 				},
 			},
@@ -149,12 +157,12 @@ export default class Ape {
 
 			if (bnbReserve.eq(0)) {
 				this.spinner.stop();
-				this.logger.log(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`);
+				this.spinner = ora(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`).start();
 				await this.sleep(300);
 				this.watchOne();
 			} else {
 				this.spinner.stop();
-				this.logger.log(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`);
+				//this.logger.log(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`);
 				this.Buy();
 			}
 		}
