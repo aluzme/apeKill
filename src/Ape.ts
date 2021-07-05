@@ -46,7 +46,14 @@ export default class Ape {
 		this.Init();
 	}
 
-	private Init() {
+	private async Init() {
+		// select network
+		const network = await this.selectNetwork();
+		this.RPC_URL = network.RPC_URL;
+		this.web3 = new Web3(this.RPC_URL);
+		this.routerAddress = network.Rourter_Address;
+
+		// input target address
 		inquirer
 			.prompt([
 				{
@@ -61,15 +68,6 @@ export default class Ape {
 
 				if (Web3.utils.isAddress(data)) {
 					this.tartgetTokenAddress = data;
-
-					try {
-						const network = await this.selectNetwork();
-						this.RPC_URL = network.RPC_URL;
-						this.web3 = new Web3(this.RPC_URL);
-						this.routerAddress = network.Rourter_Address;
-					} catch (error) {
-						console.log(error);
-					}
 
 					this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
 					this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
