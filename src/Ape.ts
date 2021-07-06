@@ -402,7 +402,6 @@ export default class Ape {
 				.on("transactionHash", (hash) => {
 					TXSubmitted = true;
 					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
-					z;
 					this.spinner = ora("Presale joining...").start();
 				})
 				.on("receipt", (receipt) => {
