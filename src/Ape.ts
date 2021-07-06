@@ -66,24 +66,36 @@ export default class Ape {
 		this.abiDecoder.addABI(require("../ABIs/IPancakeRouterV2.json"));
 		this.abiDecoder.addABI(require("../ABIs/IPancakePair.json"));
 
+		const result = await this.selectFeature();
+		switch (result.feature) {
+			case "SnipeOnDex":
+				process.stdout.write(process.platform === "win32" ? "\x1B[2J\x1B[0f" : "\x1B[2J\x1B[3J\x1B[H");
+				await this.displayInfo();
+				await this.SnipeOnDEX();
+				break;
+			case "SnipeOnDXSale":
+				process.stdout.write(process.platform === "win32" ? "\x1B[2J\x1B[0f" : "\x1B[2J\x1B[3J\x1B[H");
+				await this.displayInfo();
+				await this.SnipeOnDXSale();
+				break;
+			default:
+				break;
+		}
+	}
+
+	private async displayInfo() {
+		console.log(`    ___               __ __ _ ____
+   /   |  ____  ___  / //_/(_) / /__  _____
+  / /| | / __ \/ _ \/ ,<  / / / / _ \/ ___/
+ / ___ |/ /_/ /  __/ /| |/ / / /  __/ /
+/_/  |_/ .___/\___/_/ |_/_/_/_/\___/_/
+      /_/                                  \n`);
 		this.logger.log(`Network => ${this.RPC_URL}`);
 		this.logger.log(`RouterAddress => ${this.routerAddress}`);
 		this.logger.log(`Target Token => ${this.tartgetTokenAddress}`);
 		this.logger.log(`------- Bot Info ----------`);
 		this.logger.log(`Current Bot Address: ${this.account.address}`);
 		await this.checkBalance();
-
-		const result = await this.selectFeature();
-		switch (result.feature) {
-			case "SnipeOnDex":
-				await this.SnipeOnDEX();
-				break;
-			case "SnipeOnDXSale":
-				await this.SnipeOnDXSale();
-				break;
-			default:
-				break;
-		}
 	}
 
 	private async SnipeOnDXSale() {
@@ -402,7 +414,6 @@ export default class Ape {
 				.on("transactionHash", (hash) => {
 					TXSubmitted = true;
 					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
-					z;
 					this.spinner = ora("Presale joining...").start();
 				})
 				.on("receipt", (receipt) => {
