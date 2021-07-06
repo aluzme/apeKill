@@ -4,12 +4,12 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"genPack": "zip ApeKill.zip apekill-macos apekill-win.exe config.env",
+		"compress": "zip ApeKill.zip apekill-macos apekill-win.exe config.env",
 		"clean": "rm -r -f ./build && rm apekill-linux apekill-win.exe apekill-macos ApeKill.zip",
 		"pkgexe": "proxychains4 pkg .",
 		"webpack": "webpack --no-watch",
 		"run": "proxychains4 ts-node src/Index.ts",
-		"build": "npm run webpack && proxychains4 npm run pkgexe && npm run genPack",
+		"build": "npm run webpack && proxychains4 npm run pkgexe && npm run compress",
 		"rmAndBuild": "npm run clean && npm run build"
 	},
 	"keywords": [],

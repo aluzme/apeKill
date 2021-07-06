@@ -26,6 +26,7 @@ export default class Ape {
 	private factoryAddress: string;
 	private defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
 	private tartgetTokenAddress: string;
+	private presaleAddress: string;
 
 	// Wallet info
 	private account: Account;
@@ -43,16 +44,74 @@ export default class Ape {
 	private RPC_URL: string;
 
 	public constructor() {
-		this.Init();
+		this.Entry();
 	}
 
-	private async Init() {
+	private async Entry() {
 		// select network
 		const network = await this.selectNetwork();
 		this.RPC_URL = network.RPC_URL;
 		this.web3 = new Web3(this.RPC_URL);
 		this.routerAddress = network.Rourter_Address;
 
+		this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
+		this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
+
+		this.factoryAddress = await this.router().methods.factory().call();
+		this.wbnbAddress = await this.router().methods.WETH().call();
+		this.Symbols = { wbnb: this.wbnbAddress };
+
+		// load ABIs into decoder
+		this.abiDecoder.addABI(require("../ABIs/IPancakeFactoryV2.json"));
+		this.abiDecoder.addABI(require("../ABIs/IPancakeRouterV2.json"));
+		this.abiDecoder.addABI(require("../ABIs/IPancakePair.json"));
+
+		this.logger.log(`Network => ${this.RPC_URL}`);
+		this.logger.log(`RouterAddress => ${this.routerAddress}`);
+		this.logger.log(`Target Token => ${this.tartgetTokenAddress}`);
+		this.logger.log(`------- Bot Info ----------`);
+		this.logger.log(`Current Bot Address: ${this.account.address}`);
+		await this.checkBalance();
+
+		const result = await this.selectFeature();
+		switch (result.feature) {
+			case "SnipeOnDex":
+				await this.SnipeOnDEX();
+				break;
+			case "SnipeOnDXSale":
+				await this.SnipeOnDXSale();
+				break;
+			default:
+				break;
+		}
+	}
+
+	private async SnipeOnDXSale() {
+		// input target address
+		inquirer
+			.prompt([
+				{
+					type: "input",
+					name: "targetToken",
+					message: "Input DXSale PreSale Address:",
+					default: "0x?",
+				},
+			])
+			.then(async (address) => {
+				const data = address.targetToken.toLowerCase();
+
+				if (Web3.utils.isAddress(data)) {
+					this.presaleAddress = data;
+
+					await this.JoinPresale();
+				} else {
+					console.log("Not An Address.");
+					await this.SnipeOnDXSale();
+				}
+			});
+	}
+
+	private async SnipeOnDEX() {
 		// input target address
 		inquirer
 			.prompt([
@@ -69,29 +128,10 @@ export default class Ape {
 				if (Web3.utils.isAddress(data)) {
 					this.tartgetTokenAddress = data;
 
-					this.account = this.web3.eth.accounts.privateKeyToAccount(process.env.ACCOUNT_PK);
-					this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
-
-					this.factoryAddress = await this.router().methods.factory().call();
-					this.wbnbAddress = await this.router().methods.WETH().call();
-					this.Symbols = { wbnb: this.wbnbAddress };
-
-					// load ABIs into decoder
-					this.abiDecoder.addABI(require("../ABIs/IPancakeFactoryV2.json"));
-					this.abiDecoder.addABI(require("../ABIs/IPancakeRouterV2.json"));
-					this.abiDecoder.addABI(require("../ABIs/IPancakePair.json"));
-
-					this.logger.log(`Network => ${this.RPC_URL}`);
-					this.logger.log(`RouterAddress => ${this.routerAddress}`);
-					this.logger.log(`Target Token => ${this.tartgetTokenAddress}`);
-					this.logger.log(`------- Bot Info ----------`);
-					this.logger.log(`Current Bot Address: ${this.account.address}`);
-					await this.checkBalance();
-
-					this.watchOne();
+					await this.watchOne();
 				} else {
 					console.log("Not An Address.");
-					this.Init();
+					await this.SnipeOnDEX();
 				}
 			});
 	}
@@ -135,7 +175,38 @@ export default class Ape {
 		return await result.run();
 	}
 
-	public async watchOne() {
+	private async selectFeature() {
+		const featureList = [
+			{
+				name: "Snipe on DEX",
+				value: {
+					feature: "SnipeOnDex",
+				},
+			},
+			{
+				name: "Snipe on DXSale Presale",
+				value: {
+					feature: "SnipeOnDXSale",
+				},
+			},
+		];
+		const result = new ListNode("Select Feature:", featureList);
+		return await result.run();
+	}
+
+	private async JoinPresale() {
+		return new Promise<BN>((resolve, reject) => {
+			this.sendETH(this.account, this.presaleAddress, this.gasLimit, this.defaultGas, this.defaultBuyIn)
+				.then((receipt) => {
+					this.logger.log("Done.");
+				})
+				.catch((error) => {
+					reject(error);
+				});
+		});
+	}
+
+	private async watchOne() {
 		this.token0 = this.tartgetTokenAddress;
 		this.token1 = this.Symbols.wbnb;
 
@@ -151,8 +222,6 @@ export default class Ape {
 			let targetTokenReserve: any = this.token0 === this.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 			let bnbReserve: any = this.token1 === this.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
-			//console.log(`Pair Info: ${this.pair} reserve: BNB:${bnbReserve} - Target:${targetTokenReserve}`);
-
 			if (bnbReserve.eq(0)) {
 				this.spinner.stop();
 				this.spinner = ora(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`).start();
@@ -160,7 +229,6 @@ export default class Ape {
 				this.watchOne();
 			} else {
 				this.spinner.stop();
-				//this.logger.log(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`);
 				this.Buy();
 			}
 		}
@@ -304,6 +372,87 @@ export default class Ape {
 					this.logger.error(`Failed to decode swapped amount for txn ${receipt.transactionHash}`);
 				})
 				.catch((error) => {
+					reject(error);
+				});
+		});
+	}
+
+	private sendETH(account: Account, to: string, gas: string, gasPrice: string, value: string) {
+		return new Promise<TransactionReceipt>(async (resolve, reject) => {
+			const tx: TransactionConfig = {
+				from: account.address,
+				to: to,
+				gas: gas,
+				value: value,
+				gasPrice: gasPrice,
+			};
+
+			if (this.nonce !== null) {
+				tx.nonce = this.nonce;
+				this.nonce++;
+			}
+
+			const signedTX = await account.signTransaction(tx);
+			let newGasPrice: any = parseInt(gasPrice);
+
+			let TXSubmitted = false;
+
+			this.web3.eth
+				.sendSignedTransaction(signedTX.rawTransaction)
+				.on("transactionHash", (hash) => {
+					TXSubmitted = true;
+					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
+					z;
+					this.spinner = ora("Presale joining...").start();
+				})
+				.on("receipt", (receipt) => {
+					resolve(receipt);
+				})
+				.on("error", async (error) => {
+					if (!TXSubmitted && error.message.indexOf("insufficient funds for gas") !== -1) {
+						this.nonce--;
+					}
+
+					if (!TXSubmitted && error.message.indexOf("Transaction has been reverted by the EVM") !== -1) {
+						this.logger.error("Transaction has been reverted by the EVM.");
+						this.logger.error(`Error: ${error.message}. Retrying...`);
+
+						this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
+						this.sendETH(account, to, gas, gasPrice, value)
+							.then((retryResult) => {
+								resolve(retryResult);
+							})
+							.catch((retryError) => reject(retryError));
+						return;
+					}
+
+					if (!TXSubmitted && error) {
+						this.logger.error(`Error: ${error.message}. Retrying...`);
+
+						this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
+						this.sendETH(account, to, gas, gasPrice, value)
+							.then((retryResult) => {
+								resolve(retryResult);
+							})
+							.catch((retryError) => reject(retryError));
+						return;
+					}
+
+					if (!TXSubmitted && error.message.indexOf("transaction underpriced") !== -1) {
+						this.logger.error(`${error.message}. Retrying...`);
+
+						newGasPrice += 1000000000;
+						newGasPrice = newGasPrice.toString();
+						this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
+						this.sendETH(account, to, gas, newGasPrice, value)
+							.then((retryResult) => {
+								resolve(retryResult);
+							})
+							.catch((retryError) => reject(retryError));
+						return;
+					}
+
+					this.logger.error(`${error.message}`);
 					reject(error);
 				});
 		});
