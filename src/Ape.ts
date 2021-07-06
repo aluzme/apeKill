@@ -32,10 +32,6 @@ export default class Ape {
 	private account: Account;
 	private nonce: number;
 
-	// private getBlockAPIKEY = "212a00f7-19e6-4c91-987f-1b1ea412c586";
-	// private BSC_MAINNET_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
-	// private BSC_TEST_WS: string = `wss://bsc.getblock.io/mainnet/?api_key={$getBlockAPIKEY}`;
-
 	// Network config
 	private defaultGas = toWei(process.env.GAS_PRICE, "gwei");
 	private gasLimit: string = process.env.GAS_LIMIT;
@@ -47,9 +43,18 @@ export default class Ape {
 		this.Entry();
 	}
 
+	private async fixBug() {
+		setTimeout(() => {
+			process.stdout.write(process.platform === "win32" ? "\x1B[2J\x1B[0f" : "\x1B[2J\x1B[3J\x1B[H");
+		}, 1);
+	}
+
 	private async Entry() {
-		// select network
+		// select network‘
+		this.fixBug();
+		await this.sleep(10);
 		const network = await this.selectNetwork();
+		this.fixBug();
 		this.RPC_URL = network.RPC_URL;
 		this.web3 = new Web3(this.RPC_URL);
 		this.routerAddress = network.Rourter_Address;
@@ -83,13 +88,17 @@ export default class Ape {
 		}
 	}
 
-	private async displayInfo() {
+	private displayLogo() {
 		console.log(`    ___               __ __ _ ____
    /   |  ____  ___  / //_/(_) / /__  _____
   / /| | / __ \/ _ \/ ,<  / / / / _ \/ ___/
  / ___ |/ /_/ /  __/ /| |/ / / /  __/ /
 /_/  |_/ .___/\___/_/ |_/_/_/_/\___/_/
       /_/                                  \n`);
+	}
+
+	private async displayInfo() {
+		this.displayLogo();
 		this.logger.log(`Network => ${this.RPC_URL}`);
 		this.logger.log(`RouterAddress => ${this.routerAddress}`);
 		this.logger.log(`Target Token => ${this.tartgetTokenAddress}`);
@@ -149,6 +158,7 @@ export default class Ape {
 	}
 
 	private async selectNetwork() {
+		this.displayLogo();
 		const networkList = [
 			{
 				name: "BSC Mainnet",
