@@ -9,6 +9,7 @@ import ora from "ora";
 import inquirer from "inquirer";
 import ListNode from "./ListNode";
 import { title } from "process";
+import chalk from "chalk";
 
 export default class Ape {
 	// web3 provider
@@ -89,20 +90,18 @@ export default class Ape {
 	}
 
 	private displayLogo() {
-		console.log(`    ___               __ __ _ ____
+		console.log(
+			chalk.green(`    ___               __ __ _ ____
    /   |  ____  ___  / //_/(_) / /__  _____
   / /| | / __ \/ _ \/ ,<  / / / / _ \/ ___/
  / ___ |/ /_/ /  __/ /| |/ / / /  __/ /
 /_/  |_/ .___/\___/_/ |_/_/_/_/\___/_/
-      /_/                                  \n`);
+      /_/                                  \n`)
+		);
 	}
 
 	private async displayInfo() {
 		this.displayLogo();
-		this.logger.log(`Network => ${this.RPC_URL}`);
-		this.logger.log(`RouterAddress => ${this.routerAddress}`);
-		this.logger.log(`Target Token => ${this.tartgetTokenAddress}`);
-		this.logger.log(`------- Bot Info ----------`);
 		this.logger.log(`Current Bot Address: ${this.account.address}`);
 		await this.checkBalance();
 	}
