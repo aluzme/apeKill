@@ -1,4 +1,4 @@
-import Ape from "./Ape";
+import Entry from "./Entry";
 import LoadConfig from "./LoadConfig";
 import We3 from "web3";
 
@@ -6,5 +6,5 @@ import We3 from "web3";
 new LoadConfig();
 
 (async () => {
-	const ApeKiller = new Ape();
+	const newEntry = new Entry();
 })();

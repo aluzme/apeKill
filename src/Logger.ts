@@ -1,6 +1,6 @@
 import chalk from "chalk";
 export default class Logger {
-	constructor(private name: string) {}
+	constructor(public name: string) {}
 
 	public log(line: string) {
 		console.log(chalk.magenta(new Date().toLocaleString()) + " " + `[${this.name}] ${line}`);

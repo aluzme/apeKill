@@ -1,8 +1,8 @@
 import inquire from "inquirer";
 
 export default class ListNode {
-	private title;
-	private choices;
+	public title;
+	public choices;
 
 	constructor(title: string, choices: any) {
 		this.title = title;
