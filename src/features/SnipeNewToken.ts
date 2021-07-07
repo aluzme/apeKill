@@ -1,9 +1,9 @@
 import Web3 from "web3";
 import Web3Helper from "../Web3Helper";
 import { fromWei, toWei } from "web3-utils";
-import { Topics, Reserve } from "../Models";
-import Utils from "../Utils";
-import Logger from "../Logger";
+import { Topics, Reserve } from "../helper/Models";
+import Utils from "../helper/Utils";
+import Logger from "../helper/Logger";
 import ora from "ora";
 import inquirer from "inquirer";
 import chalk from "chalk";

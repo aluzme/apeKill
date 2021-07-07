@@ -2,7 +2,7 @@ import Web3 from "web3";
 import Web3Helper from "../Web3Helper";
 import { fromWei, toWei } from "web3-utils";
 import BN, { BigNumber } from "bignumber.js";
-import Logger from "../Logger";
+import Logger from "../helper/Logger";
 import ora from "ora";
 import inquirer from "inquirer";
 import chalk from "chalk";

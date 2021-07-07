@@ -1,10 +1,10 @@
 import Web3 from "web3";
 import { Account, TransactionReceipt, TransactionConfig } from "web3-core";
 import { fromWei, toWei } from "web3-utils";
-import { Topics, Reserve } from "./Models";
+import { Topics, Reserve } from "./helper/Models";
 import BN, { BigNumber } from "bignumber.js";
-import Logger from "./Logger";
-import Utils from "./Utils";
+import Logger from "./helper/Logger";
+import Utils from "./helper/Utils";
 import ora from "ora";
 import chalk from "chalk";
 
