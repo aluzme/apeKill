@@ -1,15 +1,10 @@
 import Web3 from "web3";
-import Web3Helper from "./Web3Helper";
-import { Account, TransactionReceipt, TransactionConfig } from "web3-core";
+import Web3Helper from "../Web3Helper";
 import { fromWei, toWei } from "web3-utils";
-import { Topics, Reserve } from "./Models";
 import BN, { BigNumber } from "bignumber.js";
-import Utils from "./Utils";
-import Logger from "./Logger";
+import Logger from "../Logger";
 import ora from "ora";
 import inquirer from "inquirer";
-import ListNode from "./ListNode";
-import { title } from "process";
 import chalk from "chalk";
 
 export default class SnipeNewToken {
