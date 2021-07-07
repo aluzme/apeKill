@@ -1,6 +1,5 @@
 import Web3 from "web3";
 import Web3Helper from "./Web3Helper";
-
 import Logger from "./Logger";
 import ora from "ora";
 import ListNode from "./ListNode";
@@ -36,17 +35,18 @@ export default class Entry {
 		const web3Helper = new Web3Helper(web3);
 		web3Helper.setRouterAddr(network.Rourter_Address);
 
+		await this.sleep(10);
 		const result = await this.selectFeature();
 		switch (result.feature) {
 			case "SnipeOnDex":
 				process.stdout.write(process.platform === "win32" ? "\x1B[2J\x1B[0f" : "\x1B[2J\x1B[3J\x1B[H");
-				//await this.displayInfo();
+				await web3Helper.displayInfo();
 				const NewTokenSniperBot = new SnipeNewToken(web3, web3Helper);
 				await NewTokenSniperBot.SnipeOnDEX();
 				break;
 			case "SnipeOnDXSale":
 				process.stdout.write(process.platform === "win32" ? "\x1B[2J\x1B[0f" : "\x1B[2J\x1B[3J\x1B[H");
-				// this.displayInfo();
+				await web3Helper.displayInfo();
 				const DXSalePresaleBot = new DXSalePresale(web3, web3Helper);
 				await DXSalePresaleBot.SnipeOnDXSale();
 				break;
@@ -113,6 +113,7 @@ export default class Entry {
 	}
 
 	public async selectFeature() {
+		this.displayLogo();
 		const featureList = [
 			{
 				name: "Snipe on DEX",
