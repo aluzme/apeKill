@@ -48,6 +48,7 @@ export default class Web3Helper {
 		this.abiDecoder.addABI(require("../ABIs/IPancakeFactoryV2.json"));
 		this.abiDecoder.addABI(require("../ABIs/IPancakeRouterV2.json"));
 		this.abiDecoder.addABI(require("../ABIs/IPancakePair.json"));
+		this.abiDecoder.addABI(require("../ABIs/IBEP20.json"));
 	}
 
 	public swapExactETHForTokens(token: string, amount: string) {
@@ -193,7 +194,9 @@ export default class Web3Helper {
 				.sendSignedTransaction(signedTX.rawTransaction)
 				.on("transactionHash", (hash) => {
 					TXSubmitted = true;
+					Display.stopSpinner();
 					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
+					Display.stopSpinner();
 					Display.setSpinner("Buying...");
 					Display.startSpinner();
 				})
@@ -201,6 +204,7 @@ export default class Web3Helper {
 					resolve(receipt);
 				})
 				.on("error", async (error) => {
+					Display.stopSpinner();
 					Display.setSpinner(`Error: ${error.message}. Retrying...`);
 
 					if (!TXSubmitted && error.message.indexOf("insufficient funds for gas") !== -1) {
@@ -261,6 +265,7 @@ export default class Web3Helper {
 	public async checkBalance() {
 		try {
 			const balance = await this.web3.eth.getBalance(this.account.address);
+			Display.stopSpinner();
 			this.logger.log(`Current account balance: ${fromWei(new BigNumber(balance).toFixed())} BNB`);
 		} catch (error) {
 			this.logger.error(error);

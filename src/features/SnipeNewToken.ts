@@ -154,7 +154,7 @@ export default class SnipeNewToken {
 				.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
 				.then(async (reveived) => {
 					Display.stopSpinner();
-					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} BNB, Got Token ${fromWei(reveived.toFixed())}`);
+					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} BNB`);
 					await this.web3Helper.checkBalance();
 				})
 				.catch((error) => {
