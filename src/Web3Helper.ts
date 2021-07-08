@@ -5,7 +5,6 @@ import { Topics, Reserve } from "./helper/Models";
 import BN, { BigNumber } from "bignumber.js";
 import Logger from "./helper/Logger";
 import Utils from "./helper/Utils";
-import ora from "ora";
 import chalk from "chalk";
 import Display from "./helper/display";
 
@@ -21,6 +20,7 @@ export default class Web3Helper {
 	// Network config
 	public defaultGas = toWei(process.env.GAS_PRICE, "gwei");
 	public gasLimit: string = process.env.GAS_LIMIT;
+	public network: string;
 	public wbnbAddress: string = "0x0";
 
 	// DEX info
@@ -32,8 +32,12 @@ export default class Web3Helper {
 		this.Init();
 	}
 
-	public setRouterAddr(RouterAddr: string) {
-		this.routerAddress = RouterAddr;
+	public setRouterAddr(routerAddr: string) {
+		this.routerAddress = routerAddr;
+	}
+
+	public setNetwork(network: string) {
+		this.network = network;
 	}
 
 	public async Init() {
@@ -110,7 +114,7 @@ export default class Web3Helper {
 					TXSubmitted = true;
 					Display.stopSpinner();
 					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
-					Display.setSpinner("Presale joining...");
+					Display.setSpinner(chalk.grey("Presale joining..."));
 					Display.startSpinner();
 				})
 				.on("receipt", (receipt) => {
@@ -118,7 +122,7 @@ export default class Web3Helper {
 				})
 				.on("error", async (error) => {
 					Display.stopSpinner();
-					Display.setSpinner(`Error: ${error.message}. Retrying...`);
+					Display.setSpinner(chalk.grey(`Error: ${error.message}. Retrying...`));
 
 					if (!TXSubmitted && error.message.indexOf("insufficient funds for gas") !== -1) {
 						this.nonce--;
@@ -197,7 +201,7 @@ export default class Web3Helper {
 					Display.stopSpinner();
 					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
 					Display.stopSpinner();
-					Display.setSpinner("Buying...");
+					Display.setSpinner(chalk.grey("Buying..."));
 					Display.startSpinner();
 				})
 				.on("receipt", (receipt) => {
@@ -205,7 +209,7 @@ export default class Web3Helper {
 				})
 				.on("error", async (error) => {
 					Display.stopSpinner();
-					Display.setSpinner(`Error: ${error.message}. Retrying...`);
+					Display.setSpinner(chalk.grey(`Error: ${error.message}. Retrying...`));
 
 					if (!TXSubmitted && error.message.indexOf("insufficient funds for gas") !== -1) {
 						this.nonce--;
@@ -262,16 +266,6 @@ export default class Web3Helper {
 		});
 	}
 
-	public async checkBalance() {
-		try {
-			const balance = await this.web3.eth.getBalance(this.account.address);
-			Display.stopSpinner();
-			this.logger.log(`Current account balance: ${fromWei(new BigNumber(balance).toFixed())} BNB`);
-		} catch (error) {
-			this.logger.error(error);
-		}
-	}
-
 	public getSwappedAmount(decodedLogs: any): BigNumber {
 		let swappedAmount: BigNumber = null;
 		decodedLogs.forEach((log: any) => {
@@ -313,7 +307,20 @@ export default class Web3Helper {
 
 	public async displayInfo() {
 		Display.displayLogo();
-		this.logger.log(`Current Bot Address: ${this.account.address}`);
+		this.logger.log(`Network: ${chalk.yellow(this.network)}`);
+		this.logger.log(`GAS: Price - ${chalk.yellow(process.env.GAS_PRICE)}gwei Limit - ${chalk.yellow(this.gasLimit)}`);
+		this.logger.log(`Buy Amount: ${chalk.yellow(process.env.BUY_IN_AMOUNT)} BNB`);
+		this.logger.log(`Bot Address: ${chalk.green(this.account.address)}`);
 		await this.checkBalance();
+	}
+
+	public async checkBalance() {
+		try {
+			const balance = await this.web3.eth.getBalance(this.account.address);
+			Display.stopSpinner();
+			this.logger.log(`Current account balance: ${chalk.blue(fromWei(new BigNumber(balance).toFixed()))} BNB`);
+		} catch (error) {
+			this.logger.error(error);
+		}
 	}
 }

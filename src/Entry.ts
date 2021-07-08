@@ -1,7 +1,6 @@
 import Web3 from "web3";
 import Web3Helper from "./Web3Helper";
 import Logger from "./helper/Logger";
-import ora from "ora";
 import ListNode from "./helper/ListNode";
 import chalk from "chalk";
 import DXSalePresale from "./features/DXSalePresale";
@@ -11,8 +10,6 @@ export default class Entry {
 	// web3 provider
 	public web3: Web3;
 	public logger: Logger = new Logger("Entry");
-
-	public RPC_URL: string;
 
 	public constructor() {
 		this.Init();
@@ -30,10 +27,12 @@ export default class Entry {
 		await this.sleep(10);
 		const network = await this.selectNetwork();
 		this.fixBug();
-		this.RPC_URL = network.RPC_URL;
-		const web3 = new Web3(this.RPC_URL);
+
+		const web3 = new Web3(network.RPC_URL);
 		const web3Helper = new Web3Helper(web3);
+
 		web3Helper.setRouterAddr(network.Rourter_Address);
+		web3Helper.setNetwork(network.Network);
 
 		await this.sleep(10);
 		const result = await this.selectFeature();

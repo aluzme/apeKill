@@ -4,7 +4,6 @@ import { fromWei, toWei } from "web3-utils";
 import { Topics, Reserve } from "../helper/Models";
 import Utils from "../helper/Utils";
 import Logger from "../helper/Logger";
-import ora from "ora";
 import inquirer from "inquirer";
 import chalk from "chalk";
 import Display from "../helper/display";
@@ -54,7 +53,7 @@ export default class SnipeNewToken {
 				if (Web3.utils.isAddress(data)) {
 					this.tartgetTokenAddress = data;
 
-					Display.setSpinner("Searching token liquidity...");
+					Display.setSpinner(chalk.grey("Searching token liquidity..."));
 					await this.watchOne();
 				} else {
 					console.log("Not An Address.");
@@ -81,7 +80,7 @@ export default class SnipeNewToken {
 
 			if (bnbReserve.eq(0)) {
 				Display.stopSpinner();
-				Display.setSpinner(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`);
+				Display.setSpinner(chalk.grey(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`));
 				Display.startSpinner();
 				await this.sleep(300);
 				this.watchOne();
