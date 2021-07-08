@@ -13,7 +13,14 @@ export default class Entry {
 	public symbolName: string = "BNB";
 
 	public constructor() {
-		this.Init();
+		const { GAS_LIMIT, GAS_PRICE, BUY_IN_AMOUNT, ACCOUNT_PK } = process.env;
+
+		//config guard
+		if (GAS_PRICE && GAS_LIMIT && BUY_IN_AMOUNT && ACCOUNT_PK && ACCOUNT_PK.length > 10) {
+			this.Init();
+		} else {
+			console.log("Please check your config.");
+		}
 	}
 
 	public async fixBug() {
@@ -49,7 +56,7 @@ export default class Entry {
 		web3Helper.setNetwork(network.Network);
 		web3Helper.setSymbolName(this.symbolName);
 
-		await this.sleep(10);
+		await this.sleep(1);
 		const result = await this.selectFeature();
 		switch (result.feature) {
 			case "SnipeOnDex":
