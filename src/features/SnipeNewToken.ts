@@ -35,7 +35,7 @@ export default class SnipeNewToken {
 					this.tartgetTokenAddress = data;
 
 					Display.setSpinner(chalk.grey("Searching token liquidity..."));
-					this.watchPosition();
+					//this.watchPosition();
 					//await this.watchOne();
 				} else {
 					console.log("Not An Address.");
