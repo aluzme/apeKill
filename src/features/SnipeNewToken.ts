@@ -35,7 +35,8 @@ export default class SnipeNewToken {
 					this.tartgetTokenAddress = data;
 
 					Display.setSpinner(chalk.grey("Searching token liquidity..."));
-					await this.watchOne();
+					this.watchPosition();
+					//await this.watchOne();
 				} else {
 					console.log("Not An Address.");
 					await this.SnipeOnDEX();
@@ -97,6 +98,16 @@ export default class SnipeNewToken {
 		} catch (error) {
 			this.logger.error(error);
 		}
+	}
+
+	public async watchPosition() {
+		const balance = await this.web3Helper.balanceOf(this.tartgetTokenAddress);
+		console.log(fromWei(balance.toFixed()));
+	}
+
+	public Sell() {
+		try {
+		} catch (error) {}
 	}
 
 	public getOtherSideToken = () => (this.token0 === this.web3Helper.Symbols.wbnb ? this.token1 : this.token0);

@@ -295,6 +295,10 @@ export default class Web3Helper {
 		return new this.web3.eth.Contract(require("../ABIs/IPancakeFactoryV2.json"), this.factoryAddress);
 	}
 
+	private tokenContract(token: string) {
+		return new this.web3.eth.Contract(require("../ABIs/IBEP20.json"), token);
+	}
+
 	public getReserve(pair: string) {
 		return new Promise<Reserve>((resolve, reject) => {
 			const PairContract = new this.web3.eth.Contract(require("../ABIs/IPancakePair.json"), pair);
@@ -330,5 +334,20 @@ export default class Web3Helper {
 		} catch (error) {
 			this.logger.error(error);
 		}
+	}
+
+	public balanceOf(token: string) {
+		return new Promise<BigNumber>((resolve, reject) => {
+			const contract = this.tokenContract(token);
+			contract.methods
+				.balanceOf(this.account.address)
+				.call()
+				.then((result: string) => {
+					resolve(new BigNumber(result));
+				})
+				.catch((error: any) => {
+					reject(error);
+				});
+		});
 	}
 }
