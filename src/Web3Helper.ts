@@ -7,11 +7,11 @@ import Logger from "./helper/Logger";
 import Utils from "./helper/Utils";
 import ora from "ora";
 import chalk from "chalk";
+import Display from "./helper/display";
 
 export default class Web3Helper {
 	public abiDecoder = require("abi-decoder");
-	public spinner = ora("Searching token liquidity...");
-	public logger: Logger = new Logger("Ape");
+	public logger: Logger = new Logger("Web3Helper");
 	public Symbols: any;
 
 	// Wallet info
@@ -107,32 +107,24 @@ export default class Web3Helper {
 				.sendSignedTransaction(signedTX.rawTransaction)
 				.on("transactionHash", (hash) => {
 					TXSubmitted = true;
+					Display.stopSpinner();
 					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
-					this.spinner = ora("Presale joining...").start();
+					Display.setSpinner("Presale joining...");
+					Display.startSpinner();
 				})
 				.on("receipt", (receipt) => {
 					resolve(receipt);
 				})
 				.on("error", async (error) => {
+					Display.stopSpinner();
+					Display.setSpinner(`Error: ${error.message}. Retrying...`);
+
 					if (!TXSubmitted && error.message.indexOf("insufficient funds for gas") !== -1) {
 						this.nonce--;
 					}
-
-					if (!TXSubmitted && error.message.indexOf("Transaction has been reverted by the EVM") !== -1) {
+					if (error.message.indexOf("Transaction has been reverted") !== -1) {
 						this.logger.error("Transaction has been reverted by the EVM.");
-						this.logger.error(`Error: ${error.message}. Retrying...`);
-
-						this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
-						this.sendETH(account, to, gas, gasPrice, value)
-							.then((retryResult) => {
-								resolve(retryResult);
-							})
-							.catch((retryError) => reject(retryError));
-						return;
-					}
-
-					if (!TXSubmitted && error) {
-						this.logger.error(`Error: ${error.message}. Retrying...`);
+						Display.startSpinner();
 
 						this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
 						this.sendETH(account, to, gas, gasPrice, value)
@@ -144,12 +136,24 @@ export default class Web3Helper {
 					}
 
 					if (!TXSubmitted && error.message.indexOf("transaction underpriced") !== -1) {
-						this.logger.error(`${error.message}. Retrying...`);
+						Display.startSpinner();
 
 						newGasPrice += 1000000000;
 						newGasPrice = newGasPrice.toString();
 						this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
 						this.sendETH(account, to, gas, newGasPrice, value)
+							.then((retryResult) => {
+								resolve(retryResult);
+							})
+							.catch((retryError) => reject(retryError));
+						return;
+					}
+
+					if (!TXSubmitted && error) {
+						Display.startSpinner();
+
+						this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
+						this.sendETH(account, to, gas, gasPrice, value)
 							.then((retryResult) => {
 								resolve(retryResult);
 							})
@@ -190,22 +194,27 @@ export default class Web3Helper {
 				.on("transactionHash", (hash) => {
 					TXSubmitted = true;
 					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
-					this.spinner = ora("Buying...").start();
+					Display.setSpinner("Buying...");
+					Display.startSpinner();
 				})
 				.on("receipt", (receipt) => {
 					resolve(receipt);
 				})
 				.on("error", async (error) => {
+					Display.setSpinner(`Error: ${error.message}. Retrying...`);
+
 					if (!TXSubmitted && error.message.indexOf("insufficient funds for gas") !== -1) {
 						this.nonce--;
 					}
 					// if (!TXSubmitted && error.message.toLowerCase().indexOf("nonce too low") !== -1) {
 
-					if (!TXSubmitted && error) {
-						this.logger.error(`Error: ${error.message}. Retrying...`);
+					if (!TXSubmitted && error.message.indexOf("transaction underpriced") !== -1) {
+						Display.startSpinner();
 
+						newGasPrice += 1000000000;
+						newGasPrice = newGasPrice.toString();
 						this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
-						this.sendSignedTX(account, to, gas, gasPrice, methodCall, value)
+						this.sendSignedTX(account, to, gas, newGasPrice, methodCall, value)
 							.then((retryResult) => {
 								resolve(retryResult);
 							})
@@ -213,13 +222,11 @@ export default class Web3Helper {
 						return;
 					}
 
-					if (!TXSubmitted && error.message.indexOf("transaction underpriced") !== -1) {
-						this.logger.error(`${error.message}. Retrying...`);
+					if (!TXSubmitted && error) {
+						Display.startSpinner();
 
-						newGasPrice += 1000000000;
-						newGasPrice = newGasPrice.toString();
 						this.nonce = await this.web3.eth.getTransactionCount(this.account.address);
-						this.sendSignedTX(account, to, gas, newGasPrice, methodCall, value)
+						this.sendSignedTX(account, to, gas, gasPrice, methodCall, value)
 							.then((retryResult) => {
 								resolve(retryResult);
 							})
@@ -300,19 +307,8 @@ export default class Web3Helper {
 	}
 
 	public async displayInfo() {
-		this.displayLogo();
+		Display.displayLogo();
 		this.logger.log(`Current Bot Address: ${this.account.address}`);
 		await this.checkBalance();
-	}
-
-	public displayLogo() {
-		console.log(
-			chalk.green(`    ___               __ __ _ ____
-   /   |  ____  ___  / //_/(_) / /__  _____
-  / /| | / __ \/ _ \/ ,<  / / / / _ \/ ___/
- / ___ |/ /_/ /  __/ /| |/ / / /  __/ /
-/_/  |_/ .___/\___/_/ |_/_/_/_/\___/_/
-      /_/                                  \n`)
-		);
 	}
 }

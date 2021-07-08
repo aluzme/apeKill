@@ -7,11 +7,9 @@ import Logger from "../helper/Logger";
 import ora from "ora";
 import inquirer from "inquirer";
 import chalk from "chalk";
-
+import Display from "../helper/display";
 export default class SnipeNewToken {
-	public logger: Logger = new Logger("Entry");
-	public spinner = ora("Searching token liquidity...");
-
+	public logger: Logger = new Logger("TokenSniper");
 	public defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
 	public tartgetTokenAddress: string;
 
@@ -56,6 +54,7 @@ export default class SnipeNewToken {
 				if (Web3.utils.isAddress(data)) {
 					this.tartgetTokenAddress = data;
 
+					Display.setSpinner("Searching token liquidity...");
 					await this.watchOne();
 				} else {
 					console.log("Not An Address.");
@@ -70,7 +69,7 @@ export default class SnipeNewToken {
 
 		const PairLP: string = await this.web3Helper.getPair(this.token0, this.token1);
 		if (PairLP == "0x0000000000000000000000000000000000000000") {
-			this.spinner.start();
+			Display.startSpinner();
 			await this.sleep(300);
 			this.watchOne();
 		} else if (PairLP != "0x0000000000000000000000000000000000000000") {
@@ -81,12 +80,13 @@ export default class SnipeNewToken {
 			let bnbReserve: any = this.token1 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
 			if (bnbReserve.eq(0)) {
-				this.spinner.stop();
-				this.spinner = ora(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`).start();
+				Display.stopSpinner();
+				Display.setSpinner(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`);
+				Display.startSpinner();
 				await this.sleep(300);
 				this.watchOne();
 			} else {
-				this.spinner.stop();
+				Display.stopSpinner();
 				this.Buy();
 			}
 		}
@@ -153,12 +153,12 @@ export default class SnipeNewToken {
 			this.web3Helper
 				.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
 				.then(async (reveived) => {
-					this.spinner.stop();
+					Display.stopSpinner();
 					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} BNB, Got Token ${fromWei(reveived.toFixed())}`);
 					await this.web3Helper.checkBalance();
 				})
 				.catch((error) => {
-					this.spinner.stop();
+					Display.stopSpinner();
 					this.logger.error(error);
 				});
 		} catch (error) {

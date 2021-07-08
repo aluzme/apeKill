@@ -6,9 +6,10 @@ import Logger from "../helper/Logger";
 import ora from "ora";
 import inquirer from "inquirer";
 import chalk from "chalk";
+import Display from "../helper/display";
 
 export default class SnipeNewToken {
-	public logger: Logger = new Logger("Entry");
+	public logger: Logger = new Logger("DXPreSale");
 
 	public defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
 	public presaleAddress: string;
@@ -62,9 +63,10 @@ export default class SnipeNewToken {
 			this.web3Helper
 				.sendETH(this.web3Helper.account, this.presaleAddress, this.web3Helper.gasLimit, this.web3Helper.defaultGas, this.defaultBuyIn)
 				.then((receipt) => {
+					Display.stopSpinner();
 					this.logger.log("Done.");
 				})
-				.catch((error) => {
+				.catch(async (error) => {
 					reject(error);
 				});
 		});
