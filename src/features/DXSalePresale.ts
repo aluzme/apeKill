@@ -16,23 +16,6 @@ export default class SnipeNewToken {
 
 	public constructor(public web3: Web3, public web3Helper: Web3Helper) {}
 
-	public displayLogo() {
-		console.log(
-			chalk.green(`    ___               __ __ _ ____
-   /   |  ____  ___  / //_/(_) / /__  _____
-  / /| | / __ \/ _ \/ ,<  / / / / _ \/ ___/
- / ___ |/ /_/ /  __/ /| |/ / / /  __/ /
-/_/  |_/ .___/\___/_/ |_/_/_/_/\___/_/
-      /_/                                  \n`)
-		);
-	}
-
-	public async displayInfo() {
-		this.displayLogo();
-		this.logger.log(`Current Bot Address: ${this.web3Helper.account.address}`);
-		await this.web3Helper.checkBalance();
-	}
-
 	public async SnipeOnDXSale() {
 		// input target address
 		inquirer

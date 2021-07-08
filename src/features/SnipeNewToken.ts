@@ -1,8 +1,6 @@
 import Web3 from "web3";
 import Web3Helper from "../Web3Helper";
 import { fromWei, toWei } from "web3-utils";
-import { Topics, Reserve } from "../helper/Models";
-import Utils from "../helper/Utils";
 import Logger from "../helper/Logger";
 import inquirer from "inquirer";
 import chalk from "chalk";
@@ -18,23 +16,6 @@ export default class SnipeNewToken {
 	public token1: string;
 
 	public constructor(public web3: Web3, public web3Helper: Web3Helper) {}
-
-	public displayLogo() {
-		console.log(
-			chalk.green(`    ___               __ __ _ ____
-   /   |  ____  ___  / //_/(_) / /__  _____
-  / /| | / __ \/ _ \/ ,<  / / / / _ \/ ___/
- / ___ |/ /_/ /  __/ /| |/ / / /  __/ /
-/_/  |_/ .___/\___/_/ |_/_/_/_/\___/_/
-      /_/                                  \n`)
-		);
-	}
-
-	public async displayInfo() {
-		this.displayLogo();
-		this.logger.log(`Current Bot Address: ${this.web3Helper.account.address}`);
-		await this.web3Helper.checkBalance();
-	}
 
 	public async SnipeOnDEX() {
 		// input target address
@@ -91,59 +72,10 @@ export default class SnipeNewToken {
 		}
 	}
 
-	// Start monitoring pair created events
-	public watchAll() {
-		this.web3.eth
-			.subscribe("logs", {
-				address: this.web3Helper.factoryAddress,
-				topics: [Topics.PairCreated],
-			})
-			.on("data", (log) => {
-				this.handleLogs(log);
-			})
-			.on("connected", () => {
-				this.logger.log("Listening to logs...");
-			})
-			.on("error", async (error) => {
-				this.logger.error(`Unexpected error ${error.message}`);
-				this.logger.error("WSS Connection Error. Program will reboot.");
-				process.exit(1);
-			});
-	}
-
 	public sleep(ms: number) {
 		return new Promise((resolve) => {
 			setTimeout(resolve, ms);
 		});
-	}
-
-	public async handleLogs(log: any) {
-		const decodedData = this.web3Helper.abiDecoder.decodeLogs([log]);
-		const values = Utils.decodedEventsToArray(decodedData[0]);
-
-		this.token0 = values.token0;
-		this.token1 = values.token1;
-		this.pair = values.pair;
-
-		// currently support WBNB pairs
-		if (values.token0 !== this.web3Helper.Symbols.wbnb && values.token1 !== this.web3Helper.Symbols.wbnb) {
-			return;
-		}
-
-		const reserve = await this.web3Helper.getReserve(values.pair);
-
-		const bnbReserve = values.token0 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
-
-		this.logger.log(`New pair created: ${values.pair} reserve: ${fromWei(bnbReserve.toFixed())} BNB`);
-
-		// if LP == 0
-		if (bnbReserve.eq(0)) {
-			return;
-		}
-
-		//this.Buy();
-
-		return;
 	}
 
 	public Buy() {
