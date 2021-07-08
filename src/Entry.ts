@@ -99,14 +99,6 @@ export default class Entry {
 					Rourter_Address: "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff",
 				},
 			},
-			{
-				name: "Matic Mainnet Backup",
-				value: {
-					Network: "Matic_MAINNET_Backup",
-					RPC_URL: "https://matic.getblock.io/mainnet/?api_key=212a00f7-19e6-4c91-987f-1b1ea412c586",
-					Rourter_Address: "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff",
-				},
-			},
 		];
 		const result = new ListNode("Select Network:", networkList);
 		return await result.run();
