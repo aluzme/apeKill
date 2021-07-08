@@ -61,7 +61,9 @@ export default class SnipeNewToken {
 
 			if (bnbReserve.eq(0)) {
 				Display.stopSpinner();
-				Display.setSpinner(chalk.grey(`Pair Info: ${this.pair} reserve: BNB:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`));
+				Display.setSpinner(
+					chalk.grey(`Pair Info: ${this.pair} reserve: ${this.web3Helper.SymbolName}:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`)
+				);
 				Display.startSpinner();
 				await this.sleep(300);
 				this.watchOne();
@@ -80,12 +82,12 @@ export default class SnipeNewToken {
 
 	public Buy() {
 		try {
-			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} BNB`);
+			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
 			this.web3Helper
 				.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
 				.then(async (reveived) => {
 					Display.stopSpinner();
-					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} BNB`);
+					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
 					await this.web3Helper.checkBalance();
 				})
 				.catch((error) => {

@@ -61,7 +61,7 @@ export default class SnipeMultiTokens {
 
 		const bnbReserve = values.token0 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
-		this.logger.log(`New pair created: ${values.pair} reserve: ${fromWei(bnbReserve.toFixed())} BNB`);
+		this.logger.log(`New pair created: ${values.pair} reserve: ${fromWei(bnbReserve.toFixed())} ${this.web3Helper.SymbolName}`);
 
 		// if LP == 0
 		if (bnbReserve.eq(0)) {
@@ -75,12 +75,12 @@ export default class SnipeMultiTokens {
 
 	public Buy() {
 		try {
-			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} BNB`);
+			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
 			this.web3Helper
 				.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
 				.then(async (reveived) => {
 					Display.stopSpinner();
-					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} BNB`);
+					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
 					await this.web3Helper.checkBalance();
 				})
 				.catch((error) => {

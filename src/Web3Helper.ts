@@ -12,6 +12,7 @@ export default class Web3Helper {
 	public abiDecoder = require("abi-decoder");
 	public logger: Logger = new Logger("Web3Helper");
 	public Symbols: any;
+	public SymbolName: string;
 
 	// Wallet info
 	public account: Account;
@@ -38,6 +39,10 @@ export default class Web3Helper {
 
 	public setNetwork(network: string) {
 		this.network = network;
+	}
+
+	public setSymbolName(symbolName: string) {
+		this.SymbolName = symbolName;
 	}
 
 	public async Init() {
@@ -308,17 +313,20 @@ export default class Web3Helper {
 	public async displayInfo() {
 		Display.displayLogo();
 		this.logger.log(`Network: ${chalk.yellow(this.network)}`);
-		this.logger.log(`GAS: Price - ${chalk.yellow(process.env.GAS_PRICE)}gwei Limit - ${chalk.yellow(this.gasLimit)}`);
-		this.logger.log(`Buy Amount: ${chalk.yellow(process.env.BUY_IN_AMOUNT)} BNB`);
+		this.logger.log(`GAS: Price - ${chalk.yellow(process.env.GAS_PRICE)} gwei Limit - ${chalk.yellow(this.gasLimit)}`);
+		this.logger.log(`Buy Amount: ${chalk.yellow(process.env.BUY_IN_AMOUNT)} ${this.SymbolName}`);
 		this.logger.log(`Bot Address: ${chalk.green(this.account.address)}`);
 		await this.checkBalance();
 	}
 
 	public async checkBalance() {
 		try {
+			Display.stopSpinner();
+			Display.setSpinner("Checking Balance...");
+			Display.startSpinner();
 			const balance = await this.web3.eth.getBalance(this.account.address);
 			Display.stopSpinner();
-			this.logger.log(`Current account balance: ${chalk.blue(fromWei(new BigNumber(balance).toFixed()))} BNB`);
+			this.logger.log(`Bot balance: ${chalk.green(fromWei(new BigNumber(balance).toFixed()))} ${this.SymbolName}`);
 		} catch (error) {
 			this.logger.error(error);
 		}
