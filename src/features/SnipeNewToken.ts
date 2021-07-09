@@ -40,7 +40,6 @@ export default class SnipeNewToken {
 				if (Web3.utils.isAddress(data)) {
 					this.tartgetTokenAddress = data;
 
-					Display.setSpinner(chalk.grey("Searching token liquidity..."));
 					//this.watchPosition();
 					await this.watchOne();
 				} else {
@@ -56,6 +55,7 @@ export default class SnipeNewToken {
 
 		const PairLP: string = await this.web3Helper.getPair(this.token0, this.token1);
 		if (PairLP == "0x0000000000000000000000000000000000000000") {
+			Display.setSpinner(chalk.grey("Searching token liquidity..."));
 			Display.startSpinner();
 			await this.sleep(300);
 			this.watchOne();
@@ -67,8 +67,9 @@ export default class SnipeNewToken {
 			let bnbReserve: any = this.token1 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
 			if (bnbReserve.eq(0)) {
+				Display.stopSpinner();
 				Display.setSpinner(
-					chalk.grey(`Pair Info: ${this.pair} reserve: ${this.web3Helper.SymbolName}:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`)
+					chalk.grey(`Pair Info: ${this.pair} reserve: ${fromWei(bnbReserve.toFixed())} ${this.web3Helper.SymbolName} - Target:${fromWei(targetTokenReserve.toFixed())}`)
 				);
 				Display.startSpinner();
 				await this.sleep(300);
@@ -125,13 +126,21 @@ export default class SnipeNewToken {
 
 		const bnbOut = Pricer.getOutGivenIn(
 			reserve,
-			this.token0 === this.web3Helper.Symbols.wbnb ? new BigNumber(0) : tokenBalance,
-			this.token0 === this.web3Helper.Symbols.wbnb ? tokenBalance : new BigNumber(0)
+			this.token1 === this.web3Helper.Symbols.wbnb ? new BigNumber(0) : tokenBalance,
+			this.token1 === this.web3Helper.Symbols.wbnb ? tokenBalance : new BigNumber(0)
 		);
 
 		const profitLoss = bnbOut.minus(this.spent);
+
+		if (bnbReserveRemaining.lte(0.5) && profitLoss.lte(0)) {
+			// less than 0.5% of initial BNB reserve remaining - calling it a rug pull
+			Display.stopSpinner();
+			this.logger.log(`${chalk.white.bgRed.bold("Rug Pulled!!!!")} (remainder of original BNB reserve: ${bnbReserveRemaining.toFixed(2)}%)`);
+			return;
+		}
+
 		Display.setSpinnerColor("green");
-		Display.setSpinner(`Token Balance:: ${fromWei(tokenBalance.toFixed())} \tPNL::${fromWei(profitLoss.toFixed())}`);
+		Display.setSpinner(`Token Balance: ${fromWei(tokenBalance.toFixed())} \tPNL:${fromWei(profitLoss.toFixed())} ${this.web3Helper.SymbolName}`);
 		Display.startSpinner();
 		await this.sleep(300);
 		this.watchPosition();
