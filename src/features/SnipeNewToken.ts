@@ -5,10 +5,14 @@ import Logger from "../helper/Logger";
 import inquirer from "inquirer";
 import chalk from "chalk";
 import Display from "../helper/display";
+import { Reserve } from "../helper/Models";
+import BigNumber from "bignumber.js";
 export default class SnipeNewToken {
 	public logger: Logger = new Logger("TokenSniper");
 	public defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
 	public tartgetTokenAddress: string;
+	public reserveEnter: any;
+	public initalReverse: Reserve;
 
 	// pair info
 	public pair: string;
@@ -81,8 +85,11 @@ export default class SnipeNewToken {
 		});
 	}
 
-	public Buy() {
+	public async Buy() {
 		try {
+			const reserve = await this.web3Helper.getReserve(this.pair);
+			this.reserveEnter = this.getReserveAmount(this.initalReverse).toFixed();
+
 			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
 			this.web3Helper
 				.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
@@ -101,8 +108,18 @@ export default class SnipeNewToken {
 	}
 
 	public async watchPosition() {
-		const balance = await this.web3Helper.balanceOf(this.tartgetTokenAddress);
-		console.log(fromWei(balance.toFixed()));
+		const tokenBalance = await this.web3Helper.balanceOf(this.tartgetTokenAddress);
+		console.log(`Token Balance: ${fromWei(tokenBalance.toFixed())}`);
+
+		if (tokenBalance.eq(0)) {
+			this.logger.error(`0 tokens remaining for ${this.tartgetTokenAddress}`);
+			return;
+		}
+
+		const reserve = await this.web3Helper.getReserve(this.pair);
+
+		const bnbReserve = this.token0 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
+		const bnbReserveRemaining = bnbReserve.multipliedBy(100).dividedBy(this.reserveEnter);
 	}
 
 	public Sell() {
@@ -111,4 +128,8 @@ export default class SnipeNewToken {
 	}
 
 	public getOtherSideToken = () => (this.token0 === this.web3Helper.Symbols.wbnb ? this.token1 : this.token0);
+
+	private getReserveAmount(reserve: Reserve): BigNumber {
+		return this.token0 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
+	}
 }

@@ -7,12 +7,14 @@ import Logger from "./helper/Logger";
 import Utils from "./helper/Utils";
 import chalk from "chalk";
 import Display from "./helper/display";
+import WebHelper from "./helper/WebHelper";
 
 export default class Web3Helper {
 	public abiDecoder = require("abi-decoder");
 	public logger: Logger = new Logger("Web3Helper");
 	public Symbols: any;
 	public SymbolName: string;
+	public RPC_Lantency: any;
 
 	// Wallet info
 	public account: Account;
@@ -37,8 +39,9 @@ export default class Web3Helper {
 		this.routerAddress = routerAddr;
 	}
 
-	public setNetwork(network: string) {
+	public async setNetwork(network: string, RPC_URL: string) {
 		this.network = network;
+		this.RPC_Lantency = await WebHelper.testNetworkLantency(new URL(RPC_URL).hostname);
 	}
 
 	public setSymbolName(symbolName: string) {
@@ -316,8 +319,8 @@ export default class Web3Helper {
 
 	public async displayInfo() {
 		Display.displayLogo();
-		this.logger.log(`Network: ${chalk.yellow(this.network)}`);
-		this.logger.log(`GAS: Price - ${chalk.yellow(process.env.GAS_PRICE)} gwei Limit - ${chalk.yellow(this.gasLimit)}`);
+		this.logger.log(`Network: ${chalk.yellow(this.network)}(${chalk.green(this.RPC_Lantency)}ms)`);
+		this.logger.log(`GAS: Price-${chalk.yellow(process.env.GAS_PRICE)} gwei | Limit-${chalk.yellow(this.gasLimit)}`);
 		this.logger.log(`Buy Amount: ${chalk.yellow(process.env.BUY_IN_AMOUNT)} ${this.SymbolName}`);
 		this.logger.log(`Bot Address: ${chalk.green(this.account.address)}`);
 		await this.checkBalance();

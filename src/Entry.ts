@@ -5,7 +5,7 @@ import ListNode from "./helper/ListNode";
 import chalk from "chalk";
 import DXSalePresale from "./features/DXSalePresale";
 import SnipeNewToken from "./features/SnipeNewToken";
-
+import Display from "./helper/Display";
 export default class Entry {
 	// web3 provider
 	public web3: Web3;
@@ -14,7 +14,6 @@ export default class Entry {
 
 	public constructor() {
 		const { GAS_LIMIT, GAS_PRICE, BUY_IN_AMOUNT, ACCOUNT_PK } = process.env;
-
 		//config guard
 		if (GAS_PRICE && GAS_LIMIT && BUY_IN_AMOUNT && ACCOUNT_PK && ACCOUNT_PK.length > 32) {
 			this.Init();
@@ -53,7 +52,7 @@ export default class Entry {
 		const web3Helper = new Web3Helper(web3);
 
 		web3Helper.setRouterAddr(network.Rourter_Address);
-		web3Helper.setNetwork(network.Network);
+		web3Helper.setNetwork(network.Network, network.RPC_URL);
 		web3Helper.setSymbolName(this.symbolName);
 
 		await this.sleep(1);
@@ -76,17 +75,6 @@ export default class Entry {
 		}
 	}
 
-	public displayLogo() {
-		console.log(
-			chalk.green(`    ___               __ __ _ ____
-   /   |  ____  ___  / //_/(_) / /__  _____
-  / /| | / __ \/ _ \/ ,<  / / / / _ \/ ___/
- / ___ |/ /_/ /  __/ /| |/ / / /  __/ /
-/_/  |_/ .___/\___/_/ |_/_/_/_/\___/_/
-      /_/                                  \n`)
-		);
-	}
-
 	public sleep(ms: number) {
 		return new Promise((resolve) => {
 			setTimeout(resolve, ms);
@@ -94,7 +82,7 @@ export default class Entry {
 	}
 
 	public async selectNetwork() {
-		this.displayLogo();
+		Display.displayLogo();
 		const networkList = [
 			{
 				name: "BSC Mainnet",
@@ -126,7 +114,7 @@ export default class Entry {
 	}
 
 	public async selectFeature() {
-		this.displayLogo();
+		Display.displayLogo();
 		const featureList = [
 			{
 				name: "Snipe on DEX",
