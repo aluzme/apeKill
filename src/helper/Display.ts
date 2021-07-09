@@ -18,7 +18,7 @@ export default class Display {
 	}
 
 	public static setSpinner(msg: string) {
-		this.spinner = ora(msg);
+		this.spinner.text = msg;
 	}
 
 	public static startSpinner() {

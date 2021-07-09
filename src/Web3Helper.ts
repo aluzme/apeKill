@@ -129,7 +129,6 @@ export default class Web3Helper {
 					resolve(receipt);
 				})
 				.on("error", async (error) => {
-					Display.stopSpinner();
 					Display.setSpinner(chalk.grey(`Error: ${error.message}. Retrying...`));
 
 					if (!TXSubmitted && error.message.indexOf("insufficient funds for gas") !== -1) {
@@ -208,7 +207,6 @@ export default class Web3Helper {
 					TXSubmitted = true;
 					Display.stopSpinner();
 					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
-					Display.stopSpinner();
 					Display.setSpinner(chalk.grey("Buying..."));
 					Display.startSpinner();
 				})
@@ -216,7 +214,6 @@ export default class Web3Helper {
 					resolve(receipt);
 				})
 				.on("error", async (error) => {
-					Display.stopSpinner();
 					Display.setSpinner(chalk.grey(`Error: ${error.message}. Retrying...`));
 
 					if (!TXSubmitted && error.message.indexOf("insufficient funds for gas") !== -1) {
@@ -328,7 +325,6 @@ export default class Web3Helper {
 
 	public async checkBalance() {
 		try {
-			Display.stopSpinner();
 			Display.setSpinner("Checking Balance...");
 			Display.startSpinner();
 			const balance = await this.web3.eth.getBalance(this.account.address);

@@ -7,12 +7,14 @@ import chalk from "chalk";
 import Display from "../helper/display";
 import { Reserve } from "../helper/Models";
 import BigNumber from "bignumber.js";
+import Pricer from "../helper/Pricer";
 export default class SnipeNewToken {
 	public logger: Logger = new Logger("TokenSniper");
 	public defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
 	public tartgetTokenAddress: string;
+
+	public spent: any;
 	public reserveEnter: any;
-	public initalReverse: Reserve;
 
 	// pair info
 	public pair: string;
@@ -40,7 +42,7 @@ export default class SnipeNewToken {
 
 					Display.setSpinner(chalk.grey("Searching token liquidity..."));
 					//this.watchPosition();
-					//await this.watchOne();
+					await this.watchOne();
 				} else {
 					console.log("Not An Address.");
 					await this.SnipeOnDEX();
@@ -65,7 +67,6 @@ export default class SnipeNewToken {
 			let bnbReserve: any = this.token1 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 
 			if (bnbReserve.eq(0)) {
-				Display.stopSpinner();
 				Display.setSpinner(
 					chalk.grey(`Pair Info: ${this.pair} reserve: ${this.web3Helper.SymbolName}:${fromWei(bnbReserve.toFixed())} - Target:${fromWei(targetTokenReserve.toFixed())}`)
 				);
@@ -88,15 +89,17 @@ export default class SnipeNewToken {
 	public async Buy() {
 		try {
 			const reserve = await this.web3Helper.getReserve(this.pair);
-			this.reserveEnter = this.getReserveAmount(this.initalReverse).toFixed();
+			this.reserveEnter = this.getReserveAmount(reserve).toFixed();
 
-			this.logger.log(`BUY Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
+			this.logger.log(`Buy Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
 			this.web3Helper
 				.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
 				.then(async (reveived) => {
 					Display.stopSpinner();
+					this.spent = this.defaultBuyIn;
 					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
 					await this.web3Helper.checkBalance();
+					await this.watchPosition();
 				})
 				.catch((error) => {
 					Display.stopSpinner();
@@ -109,7 +112,6 @@ export default class SnipeNewToken {
 
 	public async watchPosition() {
 		const tokenBalance = await this.web3Helper.balanceOf(this.tartgetTokenAddress);
-		console.log(`Token Balance: ${fromWei(tokenBalance.toFixed())}`);
 
 		if (tokenBalance.eq(0)) {
 			this.logger.error(`0 tokens remaining for ${this.tartgetTokenAddress}`);
@@ -120,6 +122,18 @@ export default class SnipeNewToken {
 
 		const bnbReserve = this.token0 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 		const bnbReserveRemaining = bnbReserve.multipliedBy(100).dividedBy(this.reserveEnter);
+
+		const bnbOut = Pricer.getOutGivenIn(
+			reserve,
+			this.token0 === this.web3Helper.Symbols.wbnb ? new BigNumber(0) : tokenBalance,
+			this.token0 === this.web3Helper.Symbols.wbnb ? tokenBalance : new BigNumber(0)
+		);
+
+		const profitLoss = bnbOut.minus(this.spent);
+		Display.setSpinner(`Token Balance:: ${fromWei(tokenBalance.toFixed())} \tPNL::${fromWei(profitLoss.toFixed())}`);
+		Display.startSpinner();
+		await this.sleep(300);
+		this.watchPosition();
 	}
 
 	public Sell() {
