@@ -130,6 +130,7 @@ export default class SnipeNewToken {
 		);
 
 		const profitLoss = bnbOut.minus(this.spent);
+		Display.setSpinnerColor("green");
 		Display.setSpinner(`Token Balance:: ${fromWei(tokenBalance.toFixed())} \tPNL::${fromWei(profitLoss.toFixed())}`);
 		Display.startSpinner();
 		await this.sleep(300);

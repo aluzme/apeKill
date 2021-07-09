@@ -8,7 +8,7 @@ export default class Display {
 
 	public static displayLogo() {
 		console.log(
-			chalk.green(`    ___               __ __ _ ____
+			chalk.greenBright(`    ___               __ __ _ ____
    /   |  ____  ___  / //_/(_) / /__  _____
   / /| | / __ \/ _ \/ ,<  / / / / _ \/ ___/
  / ___ |/ /_/ /  __/ /| |/ / / /  __/ /
@@ -27,5 +27,9 @@ export default class Display {
 
 	public static stopSpinner() {
 		this.spinner.stop();
+	}
+
+	public static setSpinnerColor(color: any) {
+		this.spinner.color = color;
 	}
 }

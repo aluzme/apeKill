@@ -316,10 +316,10 @@ export default class Web3Helper {
 
 	public async displayInfo() {
 		Display.displayLogo();
-		this.logger.log(`Network: ${chalk.yellow(this.network)}(${chalk.green(this.RPC_Lantency)}ms)`);
-		this.logger.log(`GAS: Price-${chalk.yellow(process.env.GAS_PRICE)} gwei | Limit-${chalk.yellow(this.gasLimit)}`);
+		this.logger.log(`Network: ${chalk.yellow(this.network)} (${chalk.green(this.RPC_Lantency)}ms)`);
+		this.logger.log(`GAS: Price ${chalk.yellow(process.env.GAS_PRICE)} gwei | Limit ${chalk.yellow(this.gasLimit)}`);
 		this.logger.log(`Buy Amount: ${chalk.yellow(process.env.BUY_IN_AMOUNT)} ${this.SymbolName}`);
-		this.logger.log(`Bot Address: ${chalk.green(this.account.address)}`);
+		this.logger.log(`Bot Address: ${chalk(this.account.address)}`);
 		await this.checkBalance();
 	}
 
@@ -329,7 +329,7 @@ export default class Web3Helper {
 			Display.startSpinner();
 			const balance = await this.web3.eth.getBalance(this.account.address);
 			Display.stopSpinner();
-			this.logger.log(`Bot balance: ${chalk.green(fromWei(new BigNumber(balance).toFixed()))} ${this.SymbolName}`);
+			this.logger.log(`Bot balance: ${chalk(fromWei(new BigNumber(balance).toFixed()))} ${this.SymbolName}`);
 		} catch (error) {
 			this.logger.error(error);
 		}
