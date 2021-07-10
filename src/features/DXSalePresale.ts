@@ -7,6 +7,7 @@ import ora from "ora";
 import inquirer from "inquirer";
 import chalk from "chalk";
 import Display from "../helper/display";
+import InputNode from "../helper/InputNode";
 
 export default class SnipeNewToken {
 	public logger: Logger = new Logger("DXPreSale");
@@ -18,27 +19,21 @@ export default class SnipeNewToken {
 
 	public async SnipeOnDXSale() {
 		// input target address
-		inquirer
-			.prompt([
-				{
-					type: "input",
-					name: "targetToken",
-					message: "Input DXSale PreSale Address:",
-					default: "0x?",
-				},
-			])
-			.then(async (address) => {
-				const data = address.targetToken.toLowerCase();
+		const address = await this.inputPresaleAddr();
+		this.presaleAddress = address;
+		await this.JoinPresale();
+	}
 
-				if (Web3.utils.isAddress(data)) {
-					this.presaleAddress = data;
-
-					await this.JoinPresale();
-				} else {
-					console.log("Not An Address.");
-					await this.SnipeOnDXSale();
+	public async inputPresaleAddr() {
+		const result = new InputNode("Input DXSale PreSale Address:", {
+			validate: function (value: any) {
+				if (Web3.utils.isAddress(value)) {
+					return true;
 				}
-			});
+				return "Input isn't a valid Address";
+			},
+		});
+		return await result.run();
 	}
 
 	public async JoinPresale() {

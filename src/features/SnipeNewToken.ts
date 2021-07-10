@@ -8,6 +8,7 @@ import Display from "../helper/display";
 import { Reserve } from "../helper/Models";
 import BigNumber from "bignumber.js";
 import Pricer from "../helper/Pricer";
+import InputNode from "../helper/InputNode";
 export default class SnipeNewToken {
 	public logger: Logger = new Logger("TokenSniper");
 	public defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
@@ -25,28 +26,24 @@ export default class SnipeNewToken {
 
 	public async SnipeOnDEX() {
 		// input target address
-		inquirer
-			.prompt([
-				{
-					type: "input",
-					name: "targetToken",
-					message: "Input Target Token Address:",
-					default: "0x?",
-				},
-			])
-			.then(async (address) => {
-				const data = address.targetToken.toLowerCase();
+		const address = await this.inputTargetTokenAddr();
 
-				if (Web3.utils.isAddress(data)) {
-					this.tartgetTokenAddress = data;
+		this.tartgetTokenAddress = address;
 
-					//this.watchPosition();
-					await this.watchOne();
-				} else {
-					console.log("Not An Address.");
-					await this.SnipeOnDEX();
+		//this.watchPosition();
+		await this.watchOne();
+	}
+
+	public async inputTargetTokenAddr() {
+		const result = new InputNode("Input Target Token Address:", {
+			validate: function (value: any) {
+				if (Web3.utils.isAddress(value)) {
+					return true;
 				}
-			});
+				return "Input isn't a valid Address";
+			},
+		});
+		return await result.run();
 	}
 
 	public async watchOne() {
