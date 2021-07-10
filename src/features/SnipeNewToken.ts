@@ -126,8 +126,8 @@ export default class SnipeNewToken {
 
 		const bnbOut = Pricer.getOutGivenIn(
 			reserve,
-			this.token1 === this.web3Helper.Symbols.wbnb ? new BigNumber(0) : tokenBalance,
-			this.token1 === this.web3Helper.Symbols.wbnb ? tokenBalance : new BigNumber(0)
+			this.token0 === this.web3Helper.Symbols.wbnb ? new BigNumber(0) : tokenBalance,
+			this.token0 === this.web3Helper.Symbols.wbnb ? tokenBalance : new BigNumber(0)
 		);
 
 		const profitLoss = bnbOut.minus(this.spent);
@@ -135,12 +135,16 @@ export default class SnipeNewToken {
 		if (bnbReserveRemaining.lte(0.5) && profitLoss.lte(0)) {
 			// less than 0.5% of initial BNB reserve remaining - calling it a rug pull
 			Display.stopSpinner();
-			this.logger.log(`${chalk.white.bgRed.bold("Rug Pulled!!!!")} (remainder of original BNB reserve: ${bnbReserveRemaining.toFixed(2)}%)`);
+			this.logger.log(`${chalk.white.bgRed.bold("Rug Pulled!!!!")} (BNB reserve: ${bnbReserveRemaining.toFixed(2)}%)`);
 			return;
 		}
 
 		Display.setSpinnerColor("green");
-		Display.setSpinner(`Token Balance: ${fromWei(tokenBalance.toFixed())} \tPNL:${fromWei(profitLoss.toFixed())} ${this.web3Helper.SymbolName}`);
+		Display.setSpinner(
+			`Token Balance: ${fromWei(tokenBalance.toFixed())} \tPNL:${
+				profitLoss.gt(0) ? chalk.green.bgWhite(fromWei(profitLoss.toFixed())) : chalk.red.bgWhite(fromWei(profitLoss.toFixed()))
+			} ${this.web3Helper.SymbolName}`
+		);
 		Display.startSpinner();
 		await this.sleep(300);
 		this.watchPosition();
