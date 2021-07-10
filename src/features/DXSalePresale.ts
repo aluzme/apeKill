@@ -30,8 +30,8 @@ export default class SnipeNewToken {
 
 	public async SnipeOnDXSale() {
 		//input presale address
-		// const address = await this.inputPresaleAddr();
-		// this.presaleAddress = address;
+		const address = await this.inputPresaleAddr();
+		this.presaleAddress = address;
 
 		let questions = [
 			{
@@ -72,16 +72,19 @@ export default class SnipeNewToken {
 		this.currentTime = new Date().getTime() / 1000;
 		this.currentBlock = await this.web3.eth.getBlockNumber();
 
+		let blockCountdown = this.startBlock - this.currentBlock;
+		let secondCountdown = this.presaleStartTime - this.currentTime;
+		let duration = moment.duration(secondCountdown * 1000, "milliseconds");
+
 		await this.getStartBlock();
 		Display.setSpinner(
-			`Start: ${this.presaleStartTime} Now:${this.timeConverter(this.currentTime)} TartgetBlock:${this.startBlock == 0 ? "?" : this.startBlock} LastestBlock:${
-				this.currentBlock
-			} Blockleft:${this.startBlock - this.currentBlock}`
+			`Countdown(H:M:S) ${duration.hours() + ":" + duration.minutes() + ":" + duration.seconds()} LastestBlock:${this.currentBlock} TartgetBlock:${
+				this.startBlock == 0 ? "?" : this.startBlock
+			} Blockleft:${blockCountdown < 0 ? "?" : blockCountdown}`
 		);
 		Display.startSpinner();
 		if (this.currentTime >= this.presaleStartTime) {
-			console.log("!!!");
-			//await this.JoinPresale();
+			await this.JoinPresale();
 		} else {
 			await this.sleep(100);
 			this.checkTime2Start();
