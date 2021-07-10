@@ -14,14 +14,40 @@ export default class SnipeNewToken {
 
 	public defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
 	public presaleAddress: string;
+	public presaleStartTime: any = 0;
 
-	public constructor(public web3: Web3, public web3Helper: Web3Helper) {}
+	public constructor(public web3: Web3, public web3Helper: Web3Helper) {
+		// input presale start time
+		inquirer.registerPrompt("datetime", require("inquirer-datepicker-prompt"));
+	}
 
 	public async SnipeOnDXSale() {
-		// input target address
-		const address = await this.inputPresaleAddr();
-		this.presaleAddress = address;
-		await this.JoinPresale();
+		// input presale address
+		// const address = await this.inputPresaleAddr();
+		// this.presaleAddress = address;
+
+		let questions = [
+			{
+				type: "datetime",
+				name: "dt",
+				message: "When does the presale start?",
+				initial: new Date(),
+				time: {
+					minutes: {
+						interval: 1,
+					},
+				},
+			},
+		];
+
+		const answers = await inquirer.prompt(questions);
+		console.log(new Date(answers.dt));
+		this.presaleStartTime = new Date(answers.dt).getTime();
+
+		console.log(this.presaleStartTime);
+
+		// join presale
+		//await this.JoinPresale();
 	}
 
 	public async inputPresaleAddr() {

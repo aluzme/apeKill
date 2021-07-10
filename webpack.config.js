@@ -10,6 +10,17 @@ module.exports = {
 	module: {
 		rules: [
 			{
+				test: /rx\.lite\.aggregates\.js/,
+				use: [
+					{
+						loader: "imports-loader",
+						options: {
+							additionalCode: "var define = false;",
+						},
+					},
+				],
+			},
+			{
 				test: /\.tsx?$/,
 				use: "ts-loader",
 				exclude: path.resolve(__dirname, "node_modules"),

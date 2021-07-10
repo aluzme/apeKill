@@ -92,6 +92,14 @@ export default class Entry {
 					Rourter_Address: "0x10ED43C718714eb63d5aA57B78B54704E256024E",
 				},
 			},
+			// {
+			// 	name: "BSC Mainnet Backup",
+			// 	value: {
+			// 		Network: "BSC_MAINNET",
+			// 		RPC_URL: "https://bsc.getblock.io/mainnet/?api_key=212a00f7-19e6-4c91-987f-1b1ea412c586",
+			// 		Rourter_Address: "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+			// 	},
+			// },
 			{
 				name: "BSC Testnet",
 				value: {
@@ -100,6 +108,14 @@ export default class Entry {
 					Rourter_Address: "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3",
 				},
 			},
+			// {
+			// 	name: "BSC Testnet Backup",
+			// 	value: {
+			// 		Network: "BSC_TESTNET",
+			// 		RPC_URL: "https://bsc.getblock.io/testnet/?api_key=212a00f7-19e6-4c91-987f-1b1ea412c586",
+			// 		Rourter_Address: "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3",
+			// 	},
+			// },
 			{
 				name: "Matic Mainnet",
 				value: {
