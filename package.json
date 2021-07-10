@@ -25,6 +25,7 @@
 	},
 	"dependencies": {
 		"abi-decoder": "^2.4.0",
+		"axios": "^0.21.1",
 		"bignumber.js": "^9.0.1",
 		"chalk": "^4.1.1",
 		"commander": "^2.20.3",

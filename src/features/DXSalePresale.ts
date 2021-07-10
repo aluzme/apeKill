@@ -9,13 +9,19 @@ import chalk from "chalk";
 import Display from "../helper/display";
 import InputNode from "../helper/InputNode";
 import moment from "moment";
+import axios from "axios";
 export default class SnipeNewToken {
 	public logger: Logger = new Logger("DXPreSale");
 
 	public defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
 	public presaleAddress: string;
+
 	public presaleStartTime: any = 0;
 	public currentTime: any = 0;
+
+	public startBlock: number = 0;
+	public currentBlock: number = 0;
+	public counter: number = 0;
 
 	public constructor(public web3: Web3, public web3Helper: Web3Helper) {
 		// input presale start time
@@ -24,8 +30,8 @@ export default class SnipeNewToken {
 
 	public async SnipeOnDXSale() {
 		//input presale address
-		const address = await this.inputPresaleAddr();
-		this.presaleAddress = address;
+		// const address = await this.inputPresaleAddr();
+		// this.presaleAddress = address;
 
 		let questions = [
 			{
@@ -64,13 +70,34 @@ export default class SnipeNewToken {
 
 	public async checkTime2Start() {
 		this.currentTime = new Date().getTime() / 1000;
-		Display.setSpinner(`currentTime: ${this.currentTime} presaleStartTime:${this.presaleStartTime}`);
+		this.currentBlock = await this.web3.eth.getBlockNumber();
+
+		await this.getStartBlock();
+		Display.setSpinner(
+			`Start: ${this.presaleStartTime} Now:${this.timeConverter(this.currentTime)} TartgetBlock:${this.startBlock == 0 ? "?" : this.startBlock} LastestBlock:${
+				this.currentBlock
+			} Blockleft:${this.startBlock - this.currentBlock}`
+		);
 		Display.startSpinner();
 		if (this.currentTime >= this.presaleStartTime) {
-			await this.JoinPresale();
+			console.log("!!!");
+			//await this.JoinPresale();
 		} else {
 			await this.sleep(100);
 			this.checkTime2Start();
+		}
+	}
+
+	public async getStartBlock() {
+		try {
+			const res = await axios.get(
+				`https://api.bscscan.com/api?module=block&action=getblocknobytime&timestamp=${this.presaleStartTime}&closest=before&apikey=AXKS8D1723Z6N6VB4D8NE4YH24HYMDSVTK`
+			);
+			if (res.data.status == 1) {
+				this.startBlock = res.data.result;
+			}
+		} catch (error) {
+			//console.log(error);
 		}
 	}
 
@@ -95,15 +122,15 @@ export default class SnipeNewToken {
 	}
 
 	public getCurrentTime() {
-		var date = new Date(); //当前时间
-		var month = this.zeroFill(date.getMonth() + 1); //月
-		var day = this.zeroFill(date.getDate()); //日
-		var hour = this.zeroFill(date.getHours()); //时
-		var minute = this.zeroFill(date.getMinutes()); //分
-		var second = this.zeroFill(date.getSeconds()); //秒
+		let date = new Date(); //当前时间
+		let month = this.zeroFill(date.getMonth() + 1); //月
+		let day = this.zeroFill(date.getDate()); //日
+		let hour = this.zeroFill(date.getHours()); //时
+		let minute = this.zeroFill(date.getMinutes()); //分
+		let second = this.zeroFill(date.getSeconds()); //秒
 
 		//当前时间
-		var curTime = date.getFullYear() + "-" + month + "-" + day + " " + hour + ":" + minute;
+		let curTime = date.getFullYear() + "-" + month + "-" + day + " " + hour + ":" + minute;
 
 		return curTime;
 	}
@@ -114,5 +141,19 @@ export default class SnipeNewToken {
 		} else {
 			return i;
 		}
+	}
+
+	public timeConverter(UNIX_timestamp: number) {
+		let a = new Date(UNIX_timestamp * 1000);
+		let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+		let year = a.getFullYear();
+		let month = months[a.getMonth()];
+		let date = a.getDate();
+		let hour = a.getHours();
+		let min = a.getMinutes();
+		let sec = a.getSeconds();
+		//let time = year + "-" + month + "-" + date + " " + hour + ":" + min + ":" + sec;
+		let time = hour + ":" + min + ":" + sec;
+		return time;
 	}
 }
