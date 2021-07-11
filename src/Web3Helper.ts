@@ -8,6 +8,7 @@ import Utils from "./helper/Utils";
 import chalk from "chalk";
 import Display from "./helper/display";
 import WebHelper from "./helper/WebHelper";
+import axios from "axios";
 
 export default class Web3Helper {
 	public abiDecoder = require("abi-decoder");
@@ -217,8 +218,33 @@ export default class Web3Helper {
 		return new this.web3.eth.Contract(require("../ABIs/IPancakeFactoryV2.json"), this.factoryAddress);
 	}
 
-	private tokenContract(token: string) {
-		return new this.web3.eth.Contract(require("../ABIs/IBEP20.json"), token);
+	public tokenContract(tokenAddr: string) {
+		return new this.web3.eth.Contract(require("../ABIs/IBEP20.json"), tokenAddr);
+	}
+
+	public customTokenContract(ABI: any, tokenAddr: string) {
+		return new this.web3.eth.Contract(ABI, tokenAddr);
+	}
+
+	// load contract ABI from network
+	public async loadContractfromEtherScan(address: string) {
+		return new Promise(async (resolve, reject) => {
+			// load contract ABI from network
+			const ETHSCAN_API_KEY = "AXKS8D1723Z6N6VB4D8NE4YH24HYMDSVTK";
+			let contractABI;
+			try {
+				const res = await axios.get(`https://api.bscscan.com/api?module=contract&action=getabi&address=${address}&apikey=${ETHSCAN_API_KEY}`);
+				if (res.data.status == "1") {
+					contractABI = JSON.parse(res.data.result);
+					this.abiDecoder.addABI(contractABI);
+					resolve(this.customTokenContract(contractABI, address));
+				} else {
+					reject(new Error("ABI fetch failed."));
+				}
+			} catch (error) {
+				reject(error);
+			}
+		});
 	}
 
 	public getReserve(pair: string) {

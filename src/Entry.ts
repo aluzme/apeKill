@@ -133,13 +133,13 @@ export default class Entry {
 		Display.displayLogo();
 		const featureList = [
 			{
-				name: "Snipe on DEX",
+				name: "DEX Token Sniper",
 				value: {
 					feature: "SnipeOnDex",
 				},
 			},
 			{
-				name: "Snipe on DXSale Presale",
+				name: "DXSale Presale",
 				value: {
 					feature: "SnipeOnDXSale",
 				},

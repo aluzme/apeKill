@@ -9,6 +9,7 @@ import { Reserve } from "../helper/Models";
 import BigNumber from "bignumber.js";
 import Pricer from "../helper/Pricer";
 import InputNode from "../helper/InputNode";
+import axios from "axios";
 export default class SnipeNewToken {
 	public logger: Logger = new Logger("TokenSniper");
 	public defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
@@ -30,7 +31,6 @@ export default class SnipeNewToken {
 
 		this.tartgetTokenAddress = address;
 
-		//this.watchPosition();
 		await this.watchOne();
 	}
 
@@ -47,6 +47,28 @@ export default class SnipeNewToken {
 	}
 
 	public async watchOne() {
+		let tokenContract: any,
+			tokenName: string = "?",
+			maxTxAmount: string = "?",
+			liquidityFee: string = "?",
+			taxFee: string = "?";
+		try {
+			tokenContract = await this.web3Helper.loadContractfromEtherScan(this.tartgetTokenAddress);
+			tokenName = await tokenContract.methods.name().call();
+
+			maxTxAmount = await tokenContract.methods._maxTxAmount().call();
+			liquidityFee = await tokenContract.methods._liquidityFee().call();
+			taxFee = await tokenContract.methods._taxFee().call();
+
+			Display.stopSpinner();
+			this.logger.log(`Token: ${tokenName} maxTxAmount: ${maxTxAmount} liquidityFee: ${liquidityFee}% taxFee: ${taxFee}%`);
+		} catch (error) {}
+
+		if (maxTxAmount != "?") {
+			Display.stopSpinner();
+			this.logger.log(`Contract Type: ${chalk.blue.bold("Safemoon Clone")}`);
+		}
+
 		this.token0 = this.tartgetTokenAddress;
 		this.token1 = this.web3Helper.Symbols.wbnb;
 
@@ -73,7 +95,8 @@ export default class SnipeNewToken {
 				this.watchOne();
 			} else {
 				Display.stopSpinner();
-				this.Buy();
+				console.log("BUY!!!");
+				//this.Buy();
 			}
 		}
 	}
