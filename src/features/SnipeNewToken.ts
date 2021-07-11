@@ -96,7 +96,7 @@ export default class SnipeNewToken {
 			} else {
 				Display.stopSpinner();
 				console.log("BUY!!!");
-				//this.Buy();
+				this.Buy();
 			}
 		}
 	}
