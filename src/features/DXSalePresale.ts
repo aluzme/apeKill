@@ -108,11 +108,32 @@ export default class SnipeNewToken {
 		return new Promise<BN>((resolve, reject) => {
 			this.web3Helper
 				.sendETH(this.web3Helper.account, this.presaleAddress, this.web3Helper.gasLimit, this.web3Helper.defaultGas, this.defaultBuyIn)
-				.then((receipt) => {
+				.then(async (receipt) => {
 					Display.stopSpinner();
-					this.logger.log("Done.");
+					this.logger.log("Presale Joined success.");
+					Display.setSpinner("Try to claim tokens...");
+					Display.startSpinner();
+					await this.claimToken();
+					Display.stopSpinner();
 				})
 				.catch(async (error) => {
+					reject(error);
+				});
+		});
+	}
+
+	public async claimToken() {
+		return new Promise((resolve, reject) => {
+			const MethodID = "0x48c54b9d";
+			const { account, gasLimit, defaultGas } = this.web3Helper;
+
+			this.web3Helper
+				.sendSignedTX(account, this.presaleAddress, gasLimit, defaultGas, MethodID)
+				.then((receipt) => {
+					this.logger.log("Token Claimed.");
+					resolve(receipt);
+				})
+				.catch((error) => {
 					reject(error);
 				});
 		});

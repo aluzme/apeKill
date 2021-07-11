@@ -179,9 +179,14 @@ export default class Web3Helper {
 		});
 	}
 
-	public sendSignedTX(account: Account, to: string, gas: string, gasPrice: string, methodCall: any, value: string = "0") {
+	public sendSignedTX(account: Account, to: string, gas: string, gasPrice: string, methodCall?: any, value: string = "0") {
 		return new Promise<TransactionReceipt>(async (resolve, reject) => {
-			const encodedABI = methodCall.encodeABI();
+			let encodedABI;
+			if (typeof methodCall == "string") {
+				encodedABI = methodCall;
+			} else {
+				encodedABI = methodCall.encodeABI();
+			}
 			const tx: TransactionConfig = {
 				from: account.address,
 				to: to,
@@ -207,7 +212,7 @@ export default class Web3Helper {
 					TXSubmitted = true;
 					Display.stopSpinner();
 					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
-					Display.setSpinner(chalk.grey("Buying..."));
+					Display.setSpinner(chalk.grey("Transaction Sending..."));
 					Display.startSpinner();
 				})
 				.on("receipt", (receipt) => {
