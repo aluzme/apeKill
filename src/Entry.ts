@@ -4,7 +4,7 @@ import Logger from "./helper/Logger";
 import ListNode from "./helper/ListNode";
 import chalk from "chalk";
 import DXSalePresale from "./features/DXSalePresale";
-import SnipeNewToken from "./features/SnipeNewToken";
+import SnipeNewToken from "./features/TokenSniper";
 import Display from "./helper/Display";
 export default class Entry {
 	// web3 provider
