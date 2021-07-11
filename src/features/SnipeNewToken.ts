@@ -23,6 +23,12 @@ export default class SnipeNewToken {
 	public token0: string;
 	public token1: string;
 
+	public tokenContract: any;
+	public tokenName: string = "?";
+	public maxTxAmount: string = "?";
+	public liquidityFee: string = "?";
+	public taxFee: string = "?";
+
 	public constructor(public web3: Web3, public web3Helper: Web3Helper) {}
 
 	public async SnipeOnDEX() {
@@ -30,6 +36,23 @@ export default class SnipeNewToken {
 		const address = await this.inputTargetTokenAddr();
 
 		this.tartgetTokenAddress = address;
+
+		try {
+			this.tokenContract = await this.web3Helper.loadContractfromEtherScan(this.tartgetTokenAddress);
+			this.tokenName = await this.tokenContract.methods.name().call();
+
+			this.maxTxAmount = await this.tokenContract.methods._maxTxAmount().call();
+			this.liquidityFee = await this.tokenContract.methods._liquidityFee().call();
+			this.taxFee = await this.tokenContract.methods._taxFee().call();
+
+			Display.stopSpinner();
+			this.logger.log(`Token: ${this.tokenName} maxTxAmount: ${this.maxTxAmount} liquidityFee: ${this.liquidityFee}% taxFee: ${this.taxFee}%`);
+		} catch (error) {}
+
+		if (this.maxTxAmount != "?") {
+			Display.stopSpinner();
+			this.logger.log(`Contract Type: ${chalk.blue.bold("Safemoon Clone")}`);
+		}
 
 		await this.watchOne();
 	}
@@ -47,28 +70,6 @@ export default class SnipeNewToken {
 	}
 
 	public async watchOne() {
-		let tokenContract: any,
-			tokenName: string = "?",
-			maxTxAmount: string = "?",
-			liquidityFee: string = "?",
-			taxFee: string = "?";
-		try {
-			tokenContract = await this.web3Helper.loadContractfromEtherScan(this.tartgetTokenAddress);
-			tokenName = await tokenContract.methods.name().call();
-
-			maxTxAmount = await tokenContract.methods._maxTxAmount().call();
-			liquidityFee = await tokenContract.methods._liquidityFee().call();
-			taxFee = await tokenContract.methods._taxFee().call();
-
-			Display.stopSpinner();
-			this.logger.log(`Token: ${tokenName} maxTxAmount: ${maxTxAmount} liquidityFee: ${liquidityFee}% taxFee: ${taxFee}%`);
-		} catch (error) {}
-
-		if (maxTxAmount != "?") {
-			Display.stopSpinner();
-			this.logger.log(`Contract Type: ${chalk.blue.bold("Safemoon Clone")}`);
-		}
-
 		this.token0 = this.tartgetTokenAddress;
 		this.token1 = this.web3Helper.Symbols.wbnb;
 
