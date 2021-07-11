@@ -106,8 +106,9 @@ export default class SnipeNewToken {
 
 	public async JoinPresale() {
 		return new Promise<BN>((resolve, reject) => {
+			const { account, gasLimit, defaultGas } = this.web3Helper;
 			this.web3Helper
-				.sendETH(this.web3Helper.account, this.presaleAddress, this.web3Helper.gasLimit, this.web3Helper.defaultGas, this.defaultBuyIn)
+				.sendSignedTX(account, this.presaleAddress, gasLimit, defaultGas, "0x", this.defaultBuyIn)
 				.then(async (receipt) => {
 					Display.stopSpinner();
 					this.logger.log("Presale Joined success.");
