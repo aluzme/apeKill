@@ -99,6 +99,9 @@ export default class Web3Helper {
 
 	public sendSignedTX(account: Account, to: string, gas: string, gasPrice: string, methodCall?: any, value: string = "0") {
 		return new Promise<TransactionReceipt>(async (resolve, reject) => {
+			let startTimer: number;
+			let endTimer: number;
+			let timeSpent;
 			let encodedABI;
 			if (typeof methodCall == "string") {
 				encodedABI = methodCall;
@@ -119,7 +122,9 @@ export default class Web3Helper {
 				this.nonce++;
 			}
 
+			startTimer = new Date().getTime();
 			const signedTX = await account.signTransaction(tx);
+
 			let newGasPrice: any = parseInt(gasPrice);
 
 			let TXSubmitted = false;
@@ -127,9 +132,11 @@ export default class Web3Helper {
 			this.web3.eth
 				.sendSignedTransaction(signedTX.rawTransaction)
 				.on("transactionHash", (hash) => {
+					endTimer = new Date().getTime();
+					timeSpent = endTimer - startTimer;
 					TXSubmitted = true;
 					Display.stopSpinner();
-					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)`);
+					this.logger.log(`Txn Hash ${hash} (${fromWei(gasPrice, "gwei")}gwei)(${timeSpent}ms)`);
 					Display.setSpinner(chalk.grey("Transaction Sending..."));
 					Display.startSpinner();
 				})

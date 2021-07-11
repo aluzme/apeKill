@@ -96,7 +96,6 @@ export default class SnipeNewToken {
 				this.watchOne();
 			} else {
 				Display.stopSpinner();
-				console.log("BUY!!!");
 				this.Buy();
 			}
 		}
