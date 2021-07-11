@@ -14,6 +14,7 @@ export default class SnipeNewToken {
 	public logger: Logger = new Logger("TokenSniper");
 	public defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
 	public tartgetTokenAddress: string;
+	public coingeckoSymboID: string;
 
 	public spent: any;
 	public reserveEnter: any;
@@ -23,13 +24,29 @@ export default class SnipeNewToken {
 	public token0: string;
 	public token1: string;
 
+	// contract token info
 	public tokenContract: any;
 	public tokenName: string = "?";
 	public maxTxAmount: string = "?";
 	public liquidityFee: string = "?";
 	public taxFee: string = "?";
 
-	public constructor(public web3: Web3, public web3Helper: Web3Helper) {}
+	public constructor(public web3: Web3, public web3Helper: Web3Helper) {
+		this.setCoingeckoSymbolID();
+	}
+
+	public setCoingeckoSymbolID() {
+		switch (this.web3Helper.SymbolName) {
+			case "BNB":
+			case "TBNB":
+				this.coingeckoSymboID = "binancecoin";
+				break;
+			case "Matic":
+				this.coingeckoSymboID = "matic-network";
+			default:
+				break;
+		}
+	}
 
 	public async SnipeOnDEX() {
 		// input target address
@@ -152,6 +169,17 @@ export default class SnipeNewToken {
 
 		const profitLoss = bnbOut.minus(this.spent);
 
+		let networkTokenPrice,
+			pnlInFloat,
+			PNL_In_UDS = 0;
+		try {
+			networkTokenPrice = await this.getNetWorkTokenPriceInUSD(this.coingeckoSymboID);
+			pnlInFloat = parseFloat(fromWei(profitLoss.toFixed()));
+			PNL_In_UDS = parseFloat(networkTokenPrice.toString()) * pnlInFloat;
+		} catch (error) {
+			// allow async price fetching fail
+		}
+
 		if (bnbReserveRemaining.lte(0.5) && profitLoss.lte(0)) {
 			// less than 0.5% of initial BNB reserve remaining - calling it a rug pull
 			Display.stopSpinner();
@@ -163,7 +191,7 @@ export default class SnipeNewToken {
 		Display.setSpinner(
 			`Token Balance: ${fromWei(tokenBalance.toFixed())} \tPNL:${
 				profitLoss.gt(0) ? chalk.green.bgWhite(fromWei(profitLoss.toFixed())) : chalk.red.bgWhite(fromWei(profitLoss.toFixed()))
-			} ${this.web3Helper.SymbolName}`
+			} ${this.web3Helper.SymbolName} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)})`
 		);
 		Display.startSpinner();
 		await this.sleep(300);
@@ -177,7 +205,20 @@ export default class SnipeNewToken {
 
 	public getOtherSideToken = () => (this.token0 === this.web3Helper.Symbols.wbnb ? this.token1 : this.token0);
 
-	private getReserveAmount(reserve: Reserve): BigNumber {
+	public getReserveAmount(reserve: Reserve): BigNumber {
 		return this.token0 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
+	}
+
+	public async getNetWorkTokenPriceInUSD(symbolID: string) {
+		return new Promise(async (resolve, reject) => {
+			let tokenprice: number;
+			try {
+				const res = await axios.get(`https://api.coingecko.com/api/v3/simple/price/?vs_currencies=usd&ids=${symbolID}`);
+				tokenprice = res.data[symbolID].usd;
+				resolve(tokenprice);
+			} catch (error) {
+				reject(error);
+			}
+		});
 	}
 }
