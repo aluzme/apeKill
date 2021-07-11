@@ -100,7 +100,7 @@ export default class SnipeNewToken {
 				this.startBlock = res.data.result;
 			}
 		} catch (error) {
-			//console.log(error);
+			// allow fail
 		}
 	}
 

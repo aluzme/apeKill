@@ -35,19 +35,6 @@ export default class SnipeNewToken {
 		this.setCoingeckoSymbolID();
 	}
 
-	public setCoingeckoSymbolID() {
-		switch (this.web3Helper.SymbolName) {
-			case "BNB":
-			case "TBNB":
-				this.coingeckoSymboID = "binancecoin";
-				break;
-			case "Matic":
-				this.coingeckoSymboID = "matic-network";
-			default:
-				break;
-		}
-	}
-
 	public async SnipeOnDEX() {
 		// input target address
 		const address = await this.inputTargetTokenAddr();
@@ -220,5 +207,18 @@ export default class SnipeNewToken {
 				reject(error);
 			}
 		});
+	}
+
+	public setCoingeckoSymbolID() {
+		switch (this.web3Helper.SymbolName) {
+			case "BNB":
+			case "TBNB":
+				this.coingeckoSymboID = "binancecoin";
+				break;
+			case "Matic":
+				this.coingeckoSymboID = "matic-network";
+			default:
+				break;
+		}
 	}
 }
