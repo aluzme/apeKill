@@ -18,7 +18,7 @@ export default class SnipeNewToken {
 
 	// position
 	public profitMultiplier = parseInt(process.env.PROFIT_MULTIPLIER);
-	public sellPercentage = parseInt(process.env.Auto_SELL_PERCENTAGE);
+	public sellPercentage = parseInt(process.env.AUTO_SELL_PERCENTAGE);
 	public spent: any;
 	public reserveEnter: any;
 	public approved = false;
@@ -131,7 +131,7 @@ export default class SnipeNewToken {
 					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
 
 					if (!this.approved) {
-						this.logger.log("Approving Token for selling...");
+						this.logger.log("Approving Token...");
 						await this.web3Helper.approveToRouter(this.getOtherSideToken(), "-1");
 						this.approved = true;
 					}
