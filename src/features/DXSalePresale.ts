@@ -38,7 +38,6 @@ export default class SnipeNewToken {
 				type: "datetime",
 				name: "dt",
 				message: "When does the presale start?",
-				//initial: new Date("2021-07-10 12:30"),
 				initial: new Date(),
 				format: ["yyyy", "-", "mm", "-", "dd", " ", "hh", ":", "MM", ":", "ss", " ", "TT"],
 				time: {
@@ -131,6 +130,7 @@ export default class SnipeNewToken {
 			this.web3Helper
 				.sendSignedTX(account, this.presaleAddress, gasLimit, defaultGas, MethodID)
 				.then((receipt) => {
+					Display.stopSpinner();
 					this.logger.log("Token Claimed.");
 					resolve(receipt);
 				})
