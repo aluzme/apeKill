@@ -13,9 +13,9 @@ export default class Entry {
 	public symbolName: string = "BNB";
 
 	public constructor() {
-		const { GAS_LIMIT, GAS_PRICE, BUY_IN_AMOUNT, ACCOUNT_PK } = process.env;
+		const { GAS_LIMIT, GAS_PRICE, BUY_IN_AMOUNT, ACCOUNT_PK, PROFIT_MULTIPLIER, Auto_SELL_PERCENTAGE } = process.env;
 		//config guard
-		if (GAS_PRICE && GAS_LIMIT && BUY_IN_AMOUNT && ACCOUNT_PK && ACCOUNT_PK.length > 32) {
+		if (GAS_PRICE && GAS_LIMIT && BUY_IN_AMOUNT && ACCOUNT_PK && ACCOUNT_PK.length > 32 && PROFIT_MULTIPLIER && Auto_SELL_PERCENTAGE) {
 			this.Init();
 		} else {
 			console.log("Please check your config.");

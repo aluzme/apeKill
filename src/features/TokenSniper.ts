@@ -17,6 +17,8 @@ export default class SnipeNewToken {
 	public coingeckoSymboID: string;
 
 	// position
+	public profitMultiplier = parseInt(process.env.PROFIT_MULTIPLIER);
+	public sellPercentage = parseInt(process.env.Auto_SELL_PERCENTAGE);
 	public spent: any;
 	public reserveEnter: any;
 	public approved = false;
@@ -35,6 +37,7 @@ export default class SnipeNewToken {
 	public taxFee: string = "?";
 
 	public constructor(public web3: Web3, public web3Helper: Web3Helper) {
+		this.logger.log(`Profit Multiplier: ${chalk.yellow(this.profitMultiplier)} X AutoSellPercentage: ${chalk.yellow(this.sellPercentage)} %`);
 		this.setCoingeckoSymbolID();
 	}
 
@@ -126,6 +129,13 @@ export default class SnipeNewToken {
 					Display.stopSpinner();
 					this.spent = this.defaultBuyIn;
 					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
+
+					if (!this.approved) {
+						this.logger.log("Approving Token for selling...");
+						await this.web3Helper.approveToRouter(this.getOtherSideToken(), "-1");
+						this.approved = true;
+					}
+
 					await this.web3Helper.checkBalance();
 					await this.watchPosition();
 				})
@@ -143,6 +153,7 @@ export default class SnipeNewToken {
 
 		if (this.tokenBalance.eq(0)) {
 			this.logger.error(`0 tokens remaining for ${this.tartgetTokenAddress}`);
+			await this.web3Helper.checkBalance();
 			return;
 		}
 
@@ -158,7 +169,7 @@ export default class SnipeNewToken {
 		);
 
 		const profitLoss = bnbOut.minus(this.spent);
-		const profitmultiple = profitLoss.dividedBy(this.defaultBuyIn);
+		const currentProfitMultipler = profitLoss.dividedBy(this.spent);
 
 		// calc PNL in usd
 		let networkTokenPrice,
@@ -183,23 +194,24 @@ export default class SnipeNewToken {
 		Display.setSpinner(
 			`Token Balance: ${fromWei(this.tokenBalance.toFixed())} \tPNL:${
 				profitLoss.gt(0) ? chalk.green.bgWhite(fromWei(profitLoss.toFixed())) : chalk.red.bgWhite(fromWei(profitLoss.toFixed()))
-			} ${this.web3Helper.SymbolName} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)}) ${profitmultiple.toFixed(2)}X`
+			} ${this.web3Helper.SymbolName} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)}) (${currentProfitMultipler.toFixed(2)}X)`
 		);
 		Display.startSpinner();
 		await this.sleep(300);
 
-		if (profitmultiple.gt(5)) {
-			await this.Sell(100);
+		if (currentProfitMultipler.gt(this.profitMultiplier)) {
+			Display.stopSpinner();
+			this.logger.log(
+				chalk.green(`Current Profit Multipler:${currentProfitMultipler.toFixed(2)}X. Estimated Profit:${fromWei(profitLoss.toFixed())} ${this.web3Helper.SymbolName}`)
+			);
+			this.logger.log("Auto Selling Triggered.");
+			await this.Sell(this.sellPercentage);
 		}
 		this.watchPosition();
 	}
 
 	public async Sell(sellPercentage: number) {
 		const token = this.token0 === this.web3Helper.Symbols.wbnb ? this.token1 : this.token0;
-
-		if (!this.approved) {
-			await this.web3Helper.approveToRouter(token, "-1");
-		}
 
 		const sellAmount = new BigNumber(this.tokenBalance).multipliedBy(sellPercentage).dividedBy(100).integerValue();
 		try {
@@ -208,7 +220,6 @@ export default class SnipeNewToken {
 
 			Display.stopSpinner();
 			this.logger.log(`Sold ${sellPercentage}% of ${token} for ${fromWei(sold.toFixed())} ${this.web3Helper.SymbolName}`);
-			this.logger.log(`Token remain:${remainder}`);
 		} catch (error) {
 			Display.stopSpinner();
 			this.logger.log(`Error while selling ${this.pair}: ${error.message}`);
