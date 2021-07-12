@@ -21,7 +21,6 @@ export default class SnipeNewToken {
 	public sellPercentage = parseInt(process.env.AUTO_SELL_PERCENTAGE);
 	public spent: any;
 	public reserveEnter: any;
-	public approved = false;
 	public tokenBalance: any;
 
 	// pair info
@@ -106,9 +105,7 @@ export default class SnipeNewToken {
 				this.watchOne();
 			} else {
 				Display.stopSpinner();
-				this.logger.log(
-					`Pool Info: ${this.pair} reserve: ${fromWei(bnbReserve.toFixed())} ${this.web3Helper.SymbolName} - Target:${fromWei(targetTokenReserve.toFixed())}`
-				);
+				this.logger.log(`Pool Info: ${fromWei(bnbReserve.toFixed())} ${this.web3Helper.SymbolName} - Target:${fromWei(targetTokenReserve.toFixed())}`);
 
 				this.Buy();
 			}
@@ -142,7 +139,6 @@ export default class SnipeNewToken {
 					if (approvedNum < 0) {
 						this.logger.log("Approving Token...");
 						await this.web3Helper.approveToRouter(this.getOtherSideToken(), "-1");
-						this.approved = true;
 					} else {
 						this.logger.log("Token Already Approved.");
 					}
@@ -237,10 +233,10 @@ export default class SnipeNewToken {
 			const remainder = await this.web3Helper.balanceOf(token);
 
 			Display.stopSpinner();
-			this.logger.log(`Sold ${sellPercentage}% of ${token} for ${fromWei(sold.toFixed())} ${this.web3Helper.SymbolName}`);
+			this.logger.log(`Sold ${sellPercentage}% of ${this.tokenName ?? "?"} for ${fromWei(sold.toFixed())} ${this.web3Helper.SymbolName}`);
 		} catch (error) {
 			Display.stopSpinner();
-			this.logger.log(`Error while selling ${this.pair}: ${error.message}`);
+			this.logger.log(`Error while selling ${this.pair}`);
 		}
 	}
 
