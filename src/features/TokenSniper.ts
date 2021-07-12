@@ -46,6 +46,7 @@ export default class SnipeNewToken {
 
 		this.tartgetTokenAddress = address;
 
+		// try to get token contract info
 		try {
 			this.tokenContract = await this.web3Helper.loadContractfromEtherScan(this.tartgetTokenAddress);
 			this.tokenName = await this.tokenContract.methods.name().call();
@@ -56,8 +57,11 @@ export default class SnipeNewToken {
 
 			Display.stopSpinner();
 			this.logger.log(`Token: ${this.tokenName} maxTxAmount: ${this.maxTxAmount} liquidityFee: ${this.liquidityFee}% taxFee: ${this.taxFee}%`);
-		} catch (error) {}
+		} catch (error) {
+			// allow fail
+		}
 
+		// check contract type
 		if (this.maxTxAmount != "?") {
 			Display.stopSpinner();
 			this.logger.log(`Contract Type: ${chalk.blue.bold("Safemoon Clone")}`);
@@ -98,15 +102,16 @@ export default class SnipeNewToken {
 			if (bnbReserve.eq(0)) {
 				Display.stopSpinner();
 				Display.setSpinner(
-					chalk.grey(`Pool Info: ${this.pair} reserve: ${fromWei(bnbReserve.toFixed())} ${this.web3Helper.SymbolName} - Target:${fromWei(targetTokenReserve.toFixed())}`)
+					chalk.grey(
+						`Pool Info: ${this.pair} reserve: ${fromWei(bnbReserve.toFixed())} ${this.web3Helper.SymbolName} - ${this.tokenName ?? "?"}:${targetTokenReserve.toFixed()}`
+					)
 				);
 				Display.startSpinner();
 				await this.sleep(300);
 				this.watchOne();
 			} else {
 				Display.stopSpinner();
-				this.logger.log(`Pool Info: ${fromWei(bnbReserve.toFixed())} ${this.web3Helper.SymbolName} - Target:${fromWei(targetTokenReserve.toFixed())}`);
-
+				this.logger.log(`Pool Info: ${fromWei(bnbReserve.toFixed())} ${this.web3Helper.SymbolName} - ${this.tokenName ?? "?"}:${targetTokenReserve.toFixed()}`);
 				this.Buy();
 			}
 		}
@@ -131,11 +136,13 @@ export default class SnipeNewToken {
 					this.spent = this.defaultBuyIn;
 					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
 
+					// try to get approved number
 					const approvedNum = await this.web3Helper
 						.tokenContract(this.tartgetTokenAddress)
 						.methods.allowance(this.web3Helper.account.address, this.web3Helper.routerAddress)
 						.call();
 
+					// if not approved, approve it.
 					if (approvedNum < 0) {
 						this.logger.log("Approving Token...");
 						await this.web3Helper.approveToRouter(this.getOtherSideToken(), "-1");
@@ -156,18 +163,17 @@ export default class SnipeNewToken {
 	}
 
 	public async watchPosition() {
-		this.tokenBalance = await this.web3Helper.balanceOf(this.tartgetTokenAddress);
-
+		this.tokenBalance = await this.web3Helper.balanceOf(this.token0 === this.web3Helper.Symbols.wbnb ? this.token1 : this.token0);
 		if (this.tokenBalance.eq(0)) {
 			this.logger.error(`0 tokens remaining for ${this.tartgetTokenAddress}`);
 			await this.web3Helper.checkBalance();
 			return;
 		}
-
 		const reserve = await this.web3Helper.getReserve(this.pair);
 
-		const bnbReserve = this.token0 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
-		const bnbReserveRemaining = bnbReserve.multipliedBy(100).dividedBy(this.reserveEnter);
+		//const bnbReserve: BigNumber = this.token1 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
+
+		//const bnbReserveRemaining = bnbReserve.multipliedBy(100).dividedBy(this.reserveEnter);
 
 		const bnbOut = Pricer.getOutGivenIn(
 			reserve,
@@ -190,12 +196,12 @@ export default class SnipeNewToken {
 			// allow async price fetching fail
 		}
 
-		if (bnbReserveRemaining.lte(0.5) && profitLoss.lte(0)) {
-			// less than 0.5% of initial BNB reserve remaining - calling it a rug pull
-			Display.stopSpinner();
-			this.logger.log(`${chalk.white.bgRed.bold("Rug Pulled!!!!")} (BNB reserve: ${bnbReserveRemaining.toFixed(2)}%)`);
-			return;
-		}
+		// if (bnbReserveRemaining.lte(0.5) && profitLoss.lte(0)) {
+		// 	// less than 0.5% of initial BNB reserve remaining - calling it a rug pull
+		// 	Display.stopSpinner();
+		// 	this.logger.log(`${chalk.white.bgRed.bold("Rug Pulled!!!!")} (BNB reserve: ${bnbReserveRemaining.toFixed(2)}%)`);
+		// 	return;
+		// }
 
 		Display.setSpinnerColor("green");
 		Display.setSpinner(
