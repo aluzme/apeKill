@@ -39,8 +39,8 @@ export default class SnipeNewToken {
 				name: "dt",
 				message: "When does the presale start?",
 				//initial: new Date("2021-07-10 12:30"),
-				initial: new Date(this.getCurrentTime()),
-				format: ["yyyy", "-", "mm", "-", "dd", " ", "hh", ":", "MM", " ", "TT"],
+				initial: new Date(),
+				format: ["yyyy", "-", "mm", "-", "dd", " ", "hh", ":", "MM", ":", "ss", " ", "TT"],
 				time: {
 					minutes: {
 						interval: 1,
