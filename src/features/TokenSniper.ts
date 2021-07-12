@@ -16,8 +16,11 @@ export default class SnipeNewToken {
 	public tartgetTokenAddress: string;
 	public coingeckoSymboID: string;
 
+	// position
 	public spent: any;
 	public reserveEnter: any;
+	public approved = false;
+	public tokenBalance: any;
 
 	// pair info
 	public pair: string;
@@ -136,9 +139,9 @@ export default class SnipeNewToken {
 	}
 
 	public async watchPosition() {
-		const tokenBalance = await this.web3Helper.balanceOf(this.tartgetTokenAddress);
+		this.tokenBalance = await this.web3Helper.balanceOf(this.tartgetTokenAddress);
 
-		if (tokenBalance.eq(0)) {
+		if (this.tokenBalance.eq(0)) {
 			this.logger.error(`0 tokens remaining for ${this.tartgetTokenAddress}`);
 			return;
 		}
@@ -150,12 +153,13 @@ export default class SnipeNewToken {
 
 		const bnbOut = Pricer.getOutGivenIn(
 			reserve,
-			this.token0 === this.web3Helper.Symbols.wbnb ? new BigNumber(0) : tokenBalance,
-			this.token0 === this.web3Helper.Symbols.wbnb ? tokenBalance : new BigNumber(0)
+			this.token0 === this.web3Helper.Symbols.wbnb ? new BigNumber(0) : this.tokenBalance,
+			this.token0 === this.web3Helper.Symbols.wbnb ? this.tokenBalance : new BigNumber(0)
 		);
 
 		const profitLoss = bnbOut.minus(this.spent);
 
+		// calc PNL in usd
 		let networkTokenPrice,
 			pnlInFloat,
 			PNL_In_UDS = 0;
@@ -176,18 +180,35 @@ export default class SnipeNewToken {
 
 		Display.setSpinnerColor("green");
 		Display.setSpinner(
-			`Token Balance: ${fromWei(tokenBalance.toFixed())} \tPNL:${
+			`Token Balance: ${fromWei(this.tokenBalance.toFixed())} \tPNL:${
 				profitLoss.gt(0) ? chalk.green.bgWhite(fromWei(profitLoss.toFixed())) : chalk.red.bgWhite(fromWei(profitLoss.toFixed()))
 			} ${this.web3Helper.SymbolName} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)})`
 		);
 		Display.startSpinner();
 		await this.sleep(300);
-		this.watchPosition();
+		this.Sell(100);
+		//this.watchPosition();
 	}
 
-	public Sell() {
+	public async Sell(sellPercentage: number) {
+		const token = this.token0 === this.web3Helper.Symbols.wbnb ? this.token1 : this.token0;
+
+		if (!this.approved) {
+			await this.web3Helper.approveToRouter(token, "-1");
+		}
+
+		const sellAmount = new BigNumber(this.tokenBalance).multipliedBy(sellPercentage).dividedBy(100).integerValue();
 		try {
-		} catch (error) {}
+			const sold = await this.web3Helper.swapExactTokensForETHSupportingFeeOnTransferTokens(token, sellAmount.toFixed());
+			const remainder = await this.web3Helper.balanceOf(token);
+
+			Display.stopSpinner();
+			this.logger.log(`Sold ${sellPercentage}% of ${token} for ${fromWei(sold.toFixed())} ${this.web3Helper.SymbolName}`);
+			this.logger.log(`Token remain:${remainder}`);
+		} catch (error) {
+			Display.stopSpinner();
+			this.logger.log(`Error while selling ${this.pair}: ${error.message}`);
+		}
 	}
 
 	public getOtherSideToken = () => (this.token0 === this.web3Helper.Symbols.wbnb ? this.token1 : this.token0);

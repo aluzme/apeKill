@@ -76,7 +76,7 @@ export default class Web3Helper {
 				// to address
 				this.account.address,
 				// deadline
-				Math.round(new Date().getTime() / 1000) + 30
+				this.deadline()
 			);
 
 			this.sendSignedTX(this.account, this.routerAddress, this.gasLimit, this.defaultGas, methodCall, amount)
@@ -94,6 +94,26 @@ export default class Web3Helper {
 				.catch((error) => {
 					reject(error);
 				});
+		});
+	}
+
+	public swapExactTokensForETHSupportingFeeOnTransferTokens(token: string, amount: string) {
+		return new Promise<BigNumber>((resolve, reject) => {
+			const router = this.router();
+			const methodCall = router.methods.swapExactTokensForETHSupportingFeeOnTransferTokens(amount, "0", [token, this.Symbols.wbnb], this.account.address, this.deadline());
+
+			this.sendSignedTX(this.account, this.routerAddress, "500000", this.defaultGas, methodCall)
+				.then((receipt) => {
+					const decodedLogs = this.abiDecoder.decodeLogs(receipt.logs);
+					const swapped = this.getSwappedAmount(decodedLogs);
+					if (swapped) {
+						resolve(swapped);
+						return;
+					}
+
+					this.logger.error(`Failed to decode swapped amount for txn ${receipt.transactionHash}`);
+				})
+				.catch((error) => reject(error));
 		});
 	}
 
@@ -201,6 +221,22 @@ export default class Web3Helper {
 		});
 	}
 
+	public approveToRouter(token: string, amount: string) {
+		if (amount === "-1") {
+			// MAX_INT
+			amount = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+		}
+
+		return new Promise<TransactionReceipt>((resolve, reject) => {
+			const contract = this.tokenContract(token);
+			const methodCall = contract.methods.approve(this.routerAddress, amount);
+
+			this.sendSignedTX(this.account, token, "150000", this.defaultGas, methodCall)
+				.then((receipt) => resolve(receipt))
+				.catch((error) => reject(error));
+		});
+	}
+
 	public getSwappedAmount(decodedLogs: any): BigNumber {
 		let swappedAmount: BigNumber = null;
 		decodedLogs.forEach((log: any) => {
@@ -303,5 +339,9 @@ export default class Web3Helper {
 					reject(error);
 				});
 		});
+	}
+
+	private deadline() {
+		return Math.round(new Date().getTime() / 1000) + 30;
 	}
 }
