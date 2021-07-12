@@ -7,9 +7,9 @@ import chalk from "chalk";
 import Display from "../helper/display";
 import { Reserve } from "../helper/Models";
 import BigNumber from "bignumber.js";
-import Pricer from "../helper/Pricer";
 import InputNode from "../helper/InputNode";
 import axios from "axios";
+import { type } from "os";
 export default class SnipeNewToken {
 	public logger: Logger = new Logger("TokenSniper");
 	public defaultBuyIn = toWei(process.env.BUY_IN_AMOUNT);
@@ -25,8 +25,6 @@ export default class SnipeNewToken {
 
 	// pair info
 	public pair: string;
-	public token0: string;
-	public token1: string;
 
 	// contract token info
 	public tokenContract: any;
@@ -83,10 +81,10 @@ export default class SnipeNewToken {
 	}
 
 	public async watchOne() {
-		this.token0 = this.tartgetTokenAddress;
-		this.token1 = this.web3Helper.Symbols.wbnb;
+		// this.token0 = this.tartgetTokenAddress;
+		// this.token1 = this.web3Helper.Symbols.wbnb;
 
-		const PairLP: string = await this.web3Helper.getPair(this.token0, this.token1);
+		const PairLP: string = await this.web3Helper.getPair(this.tartgetTokenAddress, this.web3Helper.Symbols.wbnb);
 		if (PairLP == "0x0000000000000000000000000000000000000000") {
 			Display.setSpinner(chalk.grey("Searching token liquidity..."));
 			Display.startSpinner();
@@ -96,8 +94,8 @@ export default class SnipeNewToken {
 			this.pair = PairLP;
 			const reserve = await this.web3Helper.getReserve(this.pair);
 
-			let targetTokenReserve: any = this.token0 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
-			let bnbReserve: any = this.token1 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
+			let targetTokenReserve: any = reserve.reserve1;
+			let bnbReserve: any = reserve.reserve0;
 
 			if (bnbReserve.eq(0)) {
 				Display.stopSpinner();
@@ -126,11 +124,11 @@ export default class SnipeNewToken {
 	public async Buy() {
 		try {
 			const reserve = await this.web3Helper.getReserve(this.pair);
-			this.reserveEnter = this.getReserveAmount(reserve).toFixed();
+			this.reserveEnter = reserve.reserve1.toFixed();
 
-			this.logger.log(`Buy Token: ${this.getOtherSideToken()} with ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
+			this.logger.log(`Buy Token: ${this.tartgetTokenAddress} with ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
 			this.web3Helper
-				.swapExactETHForTokens(this.getOtherSideToken(), this.defaultBuyIn)
+				.swapExactETHForTokens(this.tartgetTokenAddress, this.defaultBuyIn)
 				.then(async (reveived) => {
 					Display.stopSpinner();
 					this.spent = this.defaultBuyIn;
@@ -142,10 +140,12 @@ export default class SnipeNewToken {
 						.methods.allowance(this.web3Helper.account.address, this.web3Helper.routerAddress)
 						.call();
 
+					this.logger.log(approvedNum);
+
 					// if not approved, approve it.
-					if (approvedNum < 0) {
+					if (approvedNum === "0") {
 						this.logger.log("Approving Token...");
-						await this.web3Helper.approveToRouter(this.getOtherSideToken(), "-1");
+						await this.web3Helper.approveToRouter(this.tartgetTokenAddress, "-1");
 					} else {
 						this.logger.log("Token Already Approved.");
 					}
@@ -163,7 +163,7 @@ export default class SnipeNewToken {
 	}
 
 	public async watchPosition() {
-		this.tokenBalance = await this.web3Helper.balanceOf(this.token0 === this.web3Helper.Symbols.wbnb ? this.token1 : this.token0);
+		this.tokenBalance = await this.web3Helper.balanceOf(this.tartgetTokenAddress);
 		if (this.tokenBalance.eq(0)) {
 			this.logger.error(`0 tokens remaining for ${this.tartgetTokenAddress}`);
 			await this.web3Helper.checkBalance();
@@ -171,15 +171,20 @@ export default class SnipeNewToken {
 		}
 		const reserve = await this.web3Helper.getReserve(this.pair);
 
-		//const bnbReserve: BigNumber = this.token1 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
+		const bnbReserve: BigNumber = reserve.reserve0;
 
-		//const bnbReserveRemaining = bnbReserve.multipliedBy(100).dividedBy(this.reserveEnter);
+		const bnbReserveRemaining = bnbReserve.multipliedBy(100).dividedBy(this.reserveEnter);
 
-		const bnbOut = Pricer.getOutGivenIn(
-			reserve,
-			this.token0 === this.web3Helper.Symbols.wbnb ? new BigNumber(0) : this.tokenBalance,
-			this.token0 === this.web3Helper.Symbols.wbnb ? this.tokenBalance : new BigNumber(0)
-		);
+		const tokenO: string = await this.web3Helper.getToken0(this.pair);
+
+		let bnbOut: any;
+		if (tokenO.toLowerCase() == this.tartgetTokenAddress.toLowerCase()) {
+			bnbOut = await this.web3Helper.getAmountOut(this.tokenBalance, reserve.reserve0, reserve.reserve1);
+		} else {
+			bnbOut = await this.web3Helper.getAmountOut(this.tokenBalance, reserve.reserve1, reserve.reserve0);
+		}
+
+		bnbOut = new BigNumber(bnbOut);
 
 		const profitLoss = bnbOut.minus(this.spent);
 		const currentProfitMultipler = profitLoss.dividedBy(this.spent);
@@ -196,18 +201,18 @@ export default class SnipeNewToken {
 			// allow async price fetching fail
 		}
 
-		// if (bnbReserveRemaining.lte(0.5) && profitLoss.lte(0)) {
-		// 	// less than 0.5% of initial BNB reserve remaining - calling it a rug pull
-		// 	Display.stopSpinner();
-		// 	this.logger.log(`${chalk.white.bgRed.bold("Rug Pulled!!!!")} (BNB reserve: ${bnbReserveRemaining.toFixed(2)}%)`);
-		// 	return;
-		// }
+		if (bnbReserveRemaining.lte(0.5) && profitLoss.lte(0)) {
+			// less than 0.5% of initial BNB reserve remaining - calling it a rug pull
+			Display.stopSpinner();
+			this.logger.log(`${chalk.white.bgRed.bold("Rug Pulled!!!!")} (BNB reserve: ${bnbReserveRemaining.toFixed(2)}%)`);
+			return;
+		}
 
 		Display.setSpinnerColor("green");
 		Display.setSpinner(
-			`Token Balance: ${fromWei(this.tokenBalance.toFixed())} \tPNL:${
-				profitLoss.gt(0) ? chalk.green(fromWei(profitLoss.toFixed())) : chalk.red(fromWei(profitLoss.toFixed()))
-			} ${this.web3Helper.SymbolName} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)}) (${currentProfitMultipler.toFixed(2)}X)`
+			`Token Balance: ${this.tokenBalance.toFixed()} \tPNL:${profitLoss.gt(0) ? chalk.green(fromWei(profitLoss.toFixed())) : chalk.red(fromWei(profitLoss.toFixed()))} ${
+				this.web3Helper.SymbolName
+			} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)}) (${currentProfitMultipler.toFixed(2)}X)`
 		);
 		Display.startSpinner();
 		await this.sleep(300);
@@ -215,9 +220,9 @@ export default class SnipeNewToken {
 		if (currentProfitMultipler.gt(this.profitMultiplier)) {
 			Display.stopSpinner();
 			this.logger.log(
-				`Token Balance: ${fromWei(this.tokenBalance.toFixed())} \tPNL:${
-					profitLoss.gt(0) ? chalk.green(fromWei(profitLoss.toFixed())) : chalk.red(fromWei(profitLoss.toFixed()))
-				} ${this.web3Helper.SymbolName} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)}) (${currentProfitMultipler.toFixed(2)}X)`
+				`Token Balance: ${this.tokenBalance.toFixed()} \tPNL:${profitLoss.gt(0) ? chalk.green(fromWei(profitLoss.toFixed())) : chalk.red(fromWei(profitLoss.toFixed()))} ${
+					this.web3Helper.SymbolName
+				} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)}) (${currentProfitMultipler.toFixed(2)}X)`
 			);
 			this.logger.log(
 				chalk.green(`Current Profit Multipler:${currentProfitMultipler.toFixed(2)}X. Estimated Profit:${fromWei(profitLoss.toFixed())} ${this.web3Helper.SymbolName}`)
@@ -231,7 +236,7 @@ export default class SnipeNewToken {
 	}
 
 	public async Sell(sellPercentage: number) {
-		const token = this.token0 === this.web3Helper.Symbols.wbnb ? this.token1 : this.token0;
+		const token = this.tartgetTokenAddress;
 
 		const sellAmount = new BigNumber(this.tokenBalance).multipliedBy(sellPercentage).dividedBy(100).integerValue();
 		try {
@@ -244,12 +249,6 @@ export default class SnipeNewToken {
 			Display.stopSpinner();
 			this.logger.log(`Error while selling ${this.pair}`);
 		}
-	}
-
-	public getOtherSideToken = () => (this.token0 === this.web3Helper.Symbols.wbnb ? this.token1 : this.token0);
-
-	public getReserveAmount(reserve: Reserve): BigNumber {
-		return this.token0 === this.web3Helper.Symbols.wbnb ? reserve.reserve0 : reserve.reserve1;
 	}
 
 	public async getNetWorkTokenPriceInUSD(symbolID: string) {

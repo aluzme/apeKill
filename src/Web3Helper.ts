@@ -305,6 +305,36 @@ export default class Web3Helper {
 		});
 	}
 
+	public getToken0(pair: string) {
+		return new Promise<string>((resolve, reject) => {
+			const PairContract = new this.web3.eth.Contract(require("../ABIs/IPancakePair.json"), pair);
+			PairContract.methods
+				.token0()
+				.call()
+				.then((result: any) => {
+					resolve(result);
+				})
+				.catch((error: any) => {
+					reject(error);
+				});
+		});
+	}
+
+	public getAmountOut(amountIn: BigNumber, reserveIn: any, reserveOut: any) {
+		return new Promise<Reserve>((resolve, reject) => {
+			const router = this.router();
+			router.methods
+				.getAmountOut(amountIn, reserveIn, reserveOut)
+				.call()
+				.then((result: any) => {
+					resolve(result);
+				})
+				.catch((error: any) => {
+					reject(error);
+				});
+		});
+	}
+
 	public async displayInfo() {
 		Display.displayLogo();
 		this.logger.log(`Network: ${chalk.yellow(this.network)} (${chalk.green(this.RPC_Lantency)}ms)`);
