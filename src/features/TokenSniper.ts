@@ -158,6 +158,7 @@ export default class SnipeNewToken {
 		);
 
 		const profitLoss = bnbOut.minus(this.spent);
+		const profitmultiple = profitLoss.dividedBy(this.defaultBuyIn);
 
 		// calc PNL in usd
 		let networkTokenPrice,
@@ -182,12 +183,15 @@ export default class SnipeNewToken {
 		Display.setSpinner(
 			`Token Balance: ${fromWei(this.tokenBalance.toFixed())} \tPNL:${
 				profitLoss.gt(0) ? chalk.green.bgWhite(fromWei(profitLoss.toFixed())) : chalk.red.bgWhite(fromWei(profitLoss.toFixed()))
-			} ${this.web3Helper.SymbolName} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)})`
+			} ${this.web3Helper.SymbolName} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)}) ${profitmultiple.toFixed(2)}X`
 		);
 		Display.startSpinner();
 		await this.sleep(300);
-		this.Sell(100);
-		//this.watchPosition();
+
+		if (profitmultiple.gt(5)) {
+			await this.Sell(100);
+		}
+		this.watchPosition();
 	}
 
 	public async Sell(sellPercentage: number) {
