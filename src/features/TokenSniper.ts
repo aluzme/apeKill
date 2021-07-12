@@ -99,13 +99,17 @@ export default class SnipeNewToken {
 			if (bnbReserve.eq(0)) {
 				Display.stopSpinner();
 				Display.setSpinner(
-					chalk.grey(`Pair Info: ${this.pair} reserve: ${fromWei(bnbReserve.toFixed())} ${this.web3Helper.SymbolName} - Target:${fromWei(targetTokenReserve.toFixed())}`)
+					chalk.grey(`Pool Info: ${this.pair} reserve: ${fromWei(bnbReserve.toFixed())} ${this.web3Helper.SymbolName} - Target:${fromWei(targetTokenReserve.toFixed())}`)
 				);
 				Display.startSpinner();
 				await this.sleep(300);
 				this.watchOne();
 			} else {
 				Display.stopSpinner();
+				this.logger.log(
+					`Pool Info: ${this.pair} reserve: ${fromWei(bnbReserve.toFixed())} ${this.web3Helper.SymbolName} - Target:${fromWei(targetTokenReserve.toFixed())}`
+				);
+
 				this.Buy();
 			}
 		}
@@ -130,10 +134,17 @@ export default class SnipeNewToken {
 					this.spent = this.defaultBuyIn;
 					this.logger.log(`Spent ${fromWei(this.defaultBuyIn)} ${this.web3Helper.SymbolName}`);
 
-					if (!this.approved) {
+					const approvedNum = await this.web3Helper
+						.tokenContract(this.tartgetTokenAddress)
+						.methods.allowance(this.web3Helper.account.address, this.web3Helper.routerAddress)
+						.call();
+
+					if (approvedNum < 0) {
 						this.logger.log("Approving Token...");
 						await this.web3Helper.approveToRouter(this.getOtherSideToken(), "-1");
 						this.approved = true;
+					} else {
+						this.logger.log("Token Already Approved.");
 					}
 
 					await this.web3Helper.checkBalance();
@@ -193,7 +204,7 @@ export default class SnipeNewToken {
 		Display.setSpinnerColor("green");
 		Display.setSpinner(
 			`Token Balance: ${fromWei(this.tokenBalance.toFixed())} \tPNL:${
-				profitLoss.gt(0) ? chalk.green.bgWhite(fromWei(profitLoss.toFixed())) : chalk.red.bgWhite(fromWei(profitLoss.toFixed()))
+				profitLoss.gt(0) ? chalk.green(fromWei(profitLoss.toFixed())) : chalk.red(fromWei(profitLoss.toFixed()))
 			} ${this.web3Helper.SymbolName} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)}) (${currentProfitMultipler.toFixed(2)}X)`
 		);
 		Display.startSpinner();
@@ -202,10 +213,17 @@ export default class SnipeNewToken {
 		if (currentProfitMultipler.gt(this.profitMultiplier)) {
 			Display.stopSpinner();
 			this.logger.log(
+				`Token Balance: ${fromWei(this.tokenBalance.toFixed())} \tPNL:${
+					profitLoss.gt(0) ? chalk.green(fromWei(profitLoss.toFixed())) : chalk.red(fromWei(profitLoss.toFixed()))
+				} ${this.web3Helper.SymbolName} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)}) (${currentProfitMultipler.toFixed(2)}X)`
+			);
+			this.logger.log(
 				chalk.green(`Current Profit Multipler:${currentProfitMultipler.toFixed(2)}X. Estimated Profit:${fromWei(profitLoss.toFixed())} ${this.web3Helper.SymbolName}`)
 			);
 			this.logger.log("Auto Selling Triggered.");
 			await this.Sell(this.sellPercentage);
+			await this.web3Helper.checkBalance();
+			process.exit(1);
 		}
 		this.watchPosition();
 	}

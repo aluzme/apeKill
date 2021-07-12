@@ -105,11 +105,19 @@ export default class Entry {
 		Display.displayLogo();
 		const networkList = [
 			{
-				name: "BSC Mainnet",
+				name: chalk.yellow("BSC Mainnet"),
 				value: {
 					Network: "BSC_MAINNET",
 					RPC_URL: "https://bsc-dataseed1.binance.org/",
 					Rourter_Address: "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+				},
+			},
+			{
+				name: chalk.blue("Matic Mainnet"),
+				value: {
+					Network: "Matic_MAINNET",
+					RPC_URL: "https://rpc-mainnet.maticvigil.com/",
+					Rourter_Address: "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff",
 				},
 			},
 			{
@@ -118,14 +126,6 @@ export default class Entry {
 					Network: "BSC_TESTNET",
 					RPC_URL: "https://data-seed-prebsc-1-s1.binance.org:8545/",
 					Rourter_Address: "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3",
-				},
-			},
-			{
-				name: "Matic Mainnet",
-				value: {
-					Network: "Matic_MAINNET",
-					RPC_URL: "https://rpc-mainnet.maticvigil.com/",
-					Rourter_Address: "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff",
 				},
 			},
 			{
