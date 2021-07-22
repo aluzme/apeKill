@@ -83,7 +83,14 @@ export default class SnipeNewToken {
 		);
 		Display.startSpinner();
 		if (this.currentTime >= this.presaleStartTime) {
-			await this.JoinPresale();
+			// whitelistEnabled is uint8 at storage 11
+			// read data from contract storage
+			const whitelistEnabled = await this.web3.eth.getStorageAt(this.presaleAddress, 11);
+			if (whitelistEnabled === "0x0000000000000000000000000000000000000000000000000000000000000000") {
+				Display.stopSpinner();
+				this.logger.log(`whitelistEnabled ?= ${whitelistEnabled}`);
+				await this.JoinPresale();
+			}
 		} else {
 			await this.sleep(100);
 			this.checkTime2Start();

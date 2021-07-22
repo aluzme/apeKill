@@ -54,7 +54,7 @@ export default class SnipeNewToken {
 			this.taxFee = await this.tokenContract.methods._taxFee().call();
 
 			Display.stopSpinner();
-			this.logger.log(`Token: ${this.tokenName} maxTxAmount: ${this.maxTxAmount} liquidityFee: ${this.liquidityFee}% taxFee: ${this.taxFee}%`);
+			this.logger.log(`Token: ${chalk.white.bold(this.tokenName)} maxTxAmount: ${this.maxTxAmount} liquidityFee: ${this.liquidityFee}% taxFee: ${this.taxFee}%`);
 		} catch (error) {
 			// allow fail
 		}
@@ -215,7 +215,7 @@ export default class SnipeNewToken {
 			} ($${PNL_In_UDS == 0 ? "?" : PNL_In_UDS.toFixed(2)}) (${currentProfitMultipler.toFixed(2)}X)`
 		);
 		Display.startSpinner();
-		await this.sleep(300);
+		await this.sleep(1000);
 
 		if (currentProfitMultipler.gt(this.profitMultiplier)) {
 			Display.stopSpinner();

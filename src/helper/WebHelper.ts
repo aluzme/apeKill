@@ -1,5 +1,3 @@
-import Display from "../helper/Display";
-
 export default class WebHelper {
 	public static ping = require("ping");
 
